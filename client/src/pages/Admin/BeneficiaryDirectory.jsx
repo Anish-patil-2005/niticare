@@ -4,7 +4,7 @@ import { adminService } from '../../api/adminService';
 import toast from 'react-hot-toast';
 import { 
   Search, X, FileText, Save, Edit2, List, AlertTriangle, 
-  UserCheck, MapPin, Users, ClipboardCheck, CheckSquare, Square 
+  UserCheck, MapPin, Users, ClipboardCheck, CheckSquare, Square ,Loader2
 } from 'lucide-react';
 
 const BeneficiaryDirectory = () => {
@@ -57,38 +57,50 @@ const BeneficiaryDirectory = () => {
     return "";
   };
 
-  const handleEditClick = (user) => {
-    setSelectedUser(user);
-    setEditData({
-      name: user.name || '',
-      village: user.village || '',
-      edd: user.edd ? new Date(user.edd).toISOString().split('T')[0] : '',
-      contact_number: user.contact_number || '',
-      assigned_asha_id: user.assigned_asha_id || ''
-    });
-  };
+const handleEditClick = (user) => {
+  setSelectedUser(user);
+  setEditData({
+    name: user.name || '',
+    village: user.village || '',
+    edd: user.edd ? new Date(user.edd).toISOString().split('T')[0] : '',
+    contact_number: user.contact_number || '',
+    assigned_asha_id: user.assigned_asha_id || '',
+    govt_id: user.govt_id || '', // Added
+    age: user.age || '',          // Added if applicable
+    health_status: user.health_status || 'normal' // Added if applicable
+  });
+}; 
 
   const handleUpdate = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    const loadId = toast.loading("Updating record...");
-    try {
-      const payload = {
-        ...editData,
-        assigned_asha_id: editData.assigned_asha_id || null,
-        edd: editData.edd || null,
-        village: editData.village || null
-      };
-      await adminService.updateBeneficiary(selectedUser.id, payload);
-      await fetchData();
-      toast.success("Record updated", { id: loadId });
-      setSelectedUser(null);
-    } catch (err) {
-      toast.error("Update failed", { id: loadId });
-    } finally {
-      setLoading(false);
-    }
-  };
+  e.preventDefault();
+  setLoading(true);
+  const loadId = toast.loading("Updating record...");
+  
+  try {
+    // 1. Clean the payload to match your 'forms' or 'beneficiaries' table schema
+    const payload = {
+      name: editData.name,
+      village: editData.village || null,
+      contact_number: editData.contact_number || null,
+      assigned_asha_id: editData.assigned_asha_id || null,
+      edd: editData.edd || null,
+      govt_id: editData.govt_id || null
+      // Do NOT send 'age' or 'health_status' yet if they aren't in your DB columns
+    };
+
+
+    await adminService.updateBeneficiary(selectedUser.id, payload);
+    
+    await fetchData(); // Refresh the list
+    toast.success("Record updated", { id: loadId });
+    setSelectedUser(null); // Close modal
+  } catch (err) {
+    console.error("Update Error Details:", err.response?.data || err.message);
+    toast.error(err.response?.data?.message || "Update failed", { id: loadId });
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleBulkAssign = async () => {
     if (!bulkAshaId) return toast.error("Please select an ASHA");
@@ -336,44 +348,90 @@ const BeneficiaryDirectory = () => {
 
       {/* 4. Edit Modal */}
       {selectedUser && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <form onSubmit={handleUpdate} className="bg-white rounded-3xl w-full max-w-xl overflow-hidden shadow-2xl">
-            <div className="p-6 border-b flex justify-between items-center bg-gray-50/50">
-              <h3 className="text-lg font-bold text-gray-900">Update Profile</h3>
-              <button type="button" onClick={() => setSelectedUser(null)} className="p-2 hover:bg-gray-200 rounded-full"><X size={20} /></button>
-            </div>
-            <div className="p-8 space-y-5">
-               <div className="grid grid-cols-2 gap-4">
-                 <div className="col-span-2">
-                   <label className="text-[10px] font-bold text-gray-400 uppercase">Full Name</label>
-                   <input className="w-full mt-1 p-3 bg-gray-50 border rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none" value={editData.name} onChange={e => setEditData({...editData, name: e.target.value})} required />
-                 </div>
-                 <div className="col-span-2">
-                   <label className="text-[10px] font-bold text-gray-400 uppercase">Assign ASHA Worker</label>
-                   <select className="w-full mt-1 p-3 bg-gray-50 border rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none" value={editData.assigned_asha_id} onChange={e => setEditData({...editData, assigned_asha_id: e.target.value})}>
-                     <option value="">-- No ASHA (Unassigned) --</option>
-                     {ashas.map(a => <option key={a.id} value={a.id}>{a.full_name} ({a.village})</option>)}
-                   </select>
-                 </div>
-                 <div>
-                   <label className="text-[10px] font-bold text-gray-400 uppercase">Village</label>
-                   <input className="w-full mt-1 p-3 bg-gray-50 border rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none" value={editData.village} onChange={e => setEditData({...editData, village: e.target.value})} />
-                 </div>
-                 <div>
-                   <label className="text-[10px] font-bold text-gray-400 uppercase">EDD</label>
-                   <input type="date" className="w-full mt-1 p-3 bg-gray-50 border rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none" value={editData.edd} onChange={e => setEditData({...editData, edd: e.target.value})} />
-                 </div>
-               </div>
-            </div>
-            <div className="p-6 bg-gray-50 border-t flex justify-end gap-3">
-              <button type="button" onClick={() => setSelectedUser(null)} className="px-6 py-2 text-gray-500 font-bold">Cancel</button>
-              <button type="submit" disabled={loading} className="px-8 py-2 bg-emerald-600 text-white rounded-xl font-bold shadow-lg shadow-emerald-100 hover:bg-emerald-700">
-                {loading ? 'Saving...' : 'Save Changes'}
-              </button>
-            </div>
-          </form>
+  <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <form onSubmit={handleUpdate} className="bg-white rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
+      {/* Modal Header */}
+      <div className="p-6 border-b flex justify-between items-center bg-gray-50/50">
+        <div>
+          <h3 className="text-lg font-black text-gray-900">Beneficiary Profile</h3>
+          <p className="text-[10px] text-gray-400 font-mono">ID: {selectedUser.id}</p>
         </div>
-      )}
+        <button type="button" onClick={() => setSelectedUser(null)} className="p-2 hover:bg-gray-200 rounded-full transition-colors"><X size={20} /></button>
+      </div>
+
+      <div className="p-8 space-y-6 max-h-[70vh] overflow-y-auto">
+        {/* Section: Personal Info */}
+        <div className="grid grid-cols-2 gap-4">
+          <div className="col-span-2 md:col-span-1">
+            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Full Name</label>
+            <input className="w-full mt-1 p-3 bg-gray-50 border rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none font-semibold" 
+              value={editData.name} 
+              onChange={e => setEditData({...editData, name: e.target.value})} required 
+            />
+          </div>
+          <div className="col-span-2 md:col-span-1">
+            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Government ID (Aadhaar/ABHA)</label>
+            <input className="w-full mt-1 p-3 bg-gray-50 border rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none font-mono" 
+              value={editData.govt_id} 
+              onChange={e => setEditData({...editData, govt_id: e.target.value})} 
+            />
+          </div>
+        </div>
+
+        {/* Section: Allocation & Location */}
+        <div className="p-4 bg-emerald-50/50 rounded-2xl border border-emerald-100 grid grid-cols-2 gap-4">
+          <div className="col-span-2">
+            <label className="text-[10px] font-black text-emerald-700 uppercase tracking-widest flex items-center gap-1">
+              <UserCheck size={12}/> Assigned ASHA Worker
+            </label>
+            <select className="w-full mt-1 p-3 bg-white border border-emerald-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none font-bold text-emerald-900" 
+              value={editData.assigned_asha_id} 
+              onChange={e => setEditData({...editData, assigned_asha_id: e.target.value})}
+            >
+              <option value="">-- No ASHA (Unassigned) --</option>
+              {ashas.map(a => <option key={a.id} value={a.id}>{a.full_name} — {a.village}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="text-[10px] font-black text-emerald-700 uppercase tracking-widest">Village Name</label>
+            <input className="w-full mt-1 p-3 bg-white border border-emerald-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none" 
+              value={editData.village} 
+              onChange={e => setEditData({...editData, village: e.target.value})} 
+            />
+          </div>
+          <div>
+            <label className="text-[10px] font-black text-emerald-700 uppercase tracking-widest">Contact Number</label>
+            <input className="w-full mt-1 p-3 bg-white border border-emerald-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none" 
+              value={editData.contact_number} 
+              onChange={e => setEditData({...editData, contact_number: e.target.value})} 
+            />
+          </div>
+        </div>
+
+        {/* Section: Health Info */}
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Expected Delivery Date (EDD)</label>
+            <input type="date" className="w-full mt-1 p-3 bg-gray-50 border rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none" 
+              value={editData.edd} 
+              onChange={e => setEditData({...editData, edd: e.target.value})} 
+            />
+          </div>
+          {/* Add more fields here as needed */}
+        </div>
+      </div>
+
+      {/* Modal Actions */}
+      <div className="p-6 bg-gray-50 border-t flex justify-end gap-3">
+        <button type="button" onClick={() => setSelectedUser(null)} className="px-6 py-2 text-gray-500 font-bold hover:text-gray-700 transition-colors">Cancel</button>
+        <button type="submit" disabled={loading} className="px-8 py-2 bg-emerald-600 text-white rounded-xl font-bold shadow-lg shadow-emerald-100 hover:bg-emerald-700 flex items-center gap-2 transition-all active:scale-95">
+          {loading ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
+          {loading ? 'Saving...' : 'Save Changes'}
+        </button>
+      </div>
+    </form>
+  </div>
+)}
     </div>
   );
 };

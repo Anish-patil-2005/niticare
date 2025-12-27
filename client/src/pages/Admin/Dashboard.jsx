@@ -44,13 +44,11 @@ const fetchStats = async () => {
     setLoading(true);
     const response = await adminService.getDashboardStats();
     
-    // DEBUG: Look at your browser console (F12) to see which one contains the numbers
-    console.log("Full Response Object:", response);
+    
 
     // Try to find the data in the most likely places
     const serverData = response.data?.data || response.data || response;
     
-    console.log("Extracted Stats Data:", serverData);
 
     if (serverData) {
       setStats(serverData);
