@@ -1,0 +1,4 @@
+"govt_id","name","age","contact_number","edd","village","is_data_complete"
+"W-001","Anjali Sharma",24,"9876543210","2025-05-19T18:30:00.000Z","Chakan",true
+"W-002","Priya Patil",35,"9876543211","2025-06-14T18:30:00.000Z","Wagholi",true
+"W-003","Rajeshwari atil",29,"7639782928",,"Wagholi",false
