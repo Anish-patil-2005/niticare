@@ -3,7 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { formService } from '../../api/formService.js';
 import { recordService } from '../../api/recordService';
-import { ChevronLeft, Save, Loader2, Clock, AlertCircle } from 'lucide-react';
+// Added CheckSquare and Square icons
+import { ChevronLeft, Save, Loader2, Clock, AlertCircle, CheckSquare, Square } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const FillForm = () => {
@@ -25,8 +26,6 @@ const FillForm = () => {
   const loadFormAndData = async () => {
     try {
       setLoading(true);
-      
-      // 1. Fetch Form Structure (Schema)
       const response = await formService.getFormById(formId);
       let fetchedConfig = response.data || response;
       
@@ -39,28 +38,17 @@ const FillForm = () => {
       }
       setFormConfig(fetchedConfig);
 
-      // 2. Fetch Existing or Previous Record
       try {
         const existingRes = await recordService.getExistingRecord(beneficiaryId, formId, month);
-        
-        // existingRes is the unwrapped record object from our service
         if (existingRes && existingRes.data) {
           const record = existingRes;
-          
-          // Check if this is data from a previous month (Carry Forward)
           setIsCarriedForward(!!record.is_carried_forward);
-
           let finalAnswers = record.data;
-          
-          // Ensure data is an object
           if (typeof finalAnswers === 'string') {
             finalAnswers = JSON.parse(finalAnswers);
           }
-
           setFormData(finalAnswers || {});
-          console.log(record.is_carried_forward ? "⏩ Data Carried Forward" : "✅ Existing Data Found", finalAnswers);
         } else {
-          console.log("ℹ️ No record found, starting with clean form.");
           setFormData({});
           setIsCarriedForward(false);
         }
@@ -77,6 +65,20 @@ const FillForm = () => {
 
   const handleInputChange = (name, value) => {
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  // Logic to handle multiple checkbox toggles
+  const handleCheckboxChange = (fieldName, optionValue) => {
+    const currentValues = formData[fieldName] || [];
+    let newValues;
+    
+    if (currentValues.includes(optionValue)) {
+      newValues = currentValues.filter(v => v !== optionValue);
+    } else {
+      newValues = [...currentValues, optionValue];
+    }
+    
+    handleInputChange(fieldName, newValues);
   };
 
   const handleSubmit = async (e) => {
@@ -112,29 +114,23 @@ const FillForm = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 pb-20">
-      {/* Header */}
-     {/* Header */}
-<div className="bg-white p-6 border-b sticky top-0 z-10 flex items-center justify-between">
-  <div className="flex items-center gap-4">
-    <button onClick={() => navigate(-1)} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
-      <ChevronLeft size={24} />
-    </button>
-    <div>
-      <h1 className="text-xl font-black text-slate-800">{formConfig?.title || 'Form'}</h1>
-      <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">
-        {/* Dynamic Month/Registration Label */}
-        {month === '0' ? '' : `Month ${month}`} 
-        {" • "}
-        {/* Dynamic Phase Label (ANC, Postnatal, Child, etc.) */}
-        {formConfig?.phase ? `${formConfig.phase.toUpperCase()} Assessment` : 'Assessment'}
-      </p>
-    </div>
-  </div>
-</div>
+      <div className="bg-white p-6 border-b sticky top-0 z-10 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <button onClick={() => navigate(-1)} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
+            <ChevronLeft size={24} />
+          </button>
+          <div>
+            <h1 className="text-xl font-black text-slate-800">{formConfig?.title || 'Form'}</h1>
+            <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">
+              {month === '0' ? '' : `Month ${month}`} 
+              {" • "}
+              {formConfig?.phase ? `${formConfig.phase.toUpperCase()} Assessment` : 'Assessment'}
+            </p>
+          </div>
+        </div>
+      </div>
 
       <form onSubmit={handleSubmit} className="p-6 max-w-2xl mx-auto space-y-6">
-        
-        {/* Carry Forward Alert */}
         {isCarriedForward && (
           <div className="bg-amber-50 border border-amber-200 p-4 rounded-3xl flex items-center gap-4 animate-in fade-in slide-in-from-top-2">
             <div className="bg-amber-100 p-2 rounded-2xl text-amber-600">
@@ -165,6 +161,31 @@ const FillForm = () => {
                     <option value="">Select Option</option>
                     {field.options?.map(opt => <option key={opt} value={opt}>{opt}</option>)}
                   </select>
+                ) : field.type === 'checkbox' ? (
+                  <div className="grid grid-cols-1 gap-2">
+                    {field.options?.map((opt) => {
+                      const isChecked = (formData[field.name] || []).includes(opt);
+                      return (
+                        <button
+                          key={opt}
+                          type="button"
+                          onClick={() => handleCheckboxChange(field.name, opt)}
+                          className={`flex items-center gap-3 p-4 rounded-2xl border transition-all ${
+                            isChecked 
+                              ? 'bg-emerald-50 border-emerald-200 text-emerald-700' 
+                              : 'bg-slate-50 border-slate-200 text-slate-600'
+                          }`}
+                        >
+                          {isChecked ? (
+                            <CheckSquare size={20} className="text-emerald-600" />
+                          ) : (
+                            <Square size={20} className="text-slate-300" />
+                          )}
+                          <span className="font-bold text-sm">{opt}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 ) : (
                   <input
                     type={field.type || 'text'}

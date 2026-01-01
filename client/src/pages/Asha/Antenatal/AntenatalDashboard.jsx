@@ -64,12 +64,21 @@ export const AntenatalDashboard = () => {
   };
 
   const getFormsForMonth = (month) => {
-    return forms.filter(f => {
-      const formMonth = Number(f.month_number);
-      const currentMonth = Number(month);
-      return formMonth === currentMonth || f.is_recurring === true;
-    });
-  };
+  return forms.filter(f => {
+    const currentMonth = Number(month);
+
+    // If it's a recurring form, it always shows up
+    if (f.is_recurring) return true;
+
+    // If month_number is an array (Postgres integer[]), check if currentMonth is in it
+    if (Array.isArray(f.month_number)) {
+      return f.month_number.includes(currentMonth);
+    }
+
+    // Fallback for legacy single-integer data
+    return Number(f.month_number) === currentMonth;
+  });
+};
 
   const isFormDoneInMonth = (form, month) => {
     if (form.completed_months) {

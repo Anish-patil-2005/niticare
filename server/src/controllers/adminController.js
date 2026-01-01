@@ -381,21 +381,30 @@ export const createDynamicForm = async (req, res) => {
   try {
     const { title, phase, schema, month_number, is_recurring, sort_order } = req.body;
 
-    // Validation: Ensure schema is an array
+    // 1. Validation: Ensure schema is an array
     if (!Array.isArray(schema)) {
       return res.status(400).json({ message: "Form schema must be an array of fields" });
     }
 
-    // Validation: If Antenatal and not recurring, month_number is usually preferred
-    if (phase === 'antenatal' && !month_number && !is_recurring) {
-      return res.status(400).json({ message: "Please assign a month or set as recurring for Antenatal forms" });
+    // 2. Format month_number as an Array for Postgres integer[]
+    // If user sends a single number like 3, convert to [3]. 
+    // If they send [3, 6], keep it as [3, 6].
+    let monthsArray = null;
+    if (month_number !== undefined && month_number !== null) {
+      monthsArray = Array.isArray(month_number) ? month_number : [parseInt(month_number)];
+    }
+
+    // 3. Validation: Logic check for ANC forms
+    if (phase === 'antenatal' && (!monthsArray || monthsArray.length === 0) && !is_recurring) {
+      return res.status(400).json({ message: "Please assign at least one month or set as recurring for Antenatal forms" });
     }
 
     const [form] = await db('forms').insert({
       title,
       phase,
       schema: JSON.stringify(schema),
-      month_number: month_number || null,
+      // Knex handles Javascript arrays for Postgres integer[] columns automatically
+      month_number: monthsArray, 
       is_recurring: is_recurring || false,
       sort_order: sort_order || 0
     }).returning('*');
