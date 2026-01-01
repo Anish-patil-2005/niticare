@@ -17,8 +17,8 @@ router.post(
 
 
 // Feature 2: Data Cleaning
-router.get('/incomplete-data', protect, restrictTo('admin'), adminController.getIncompleteBeneficiaries);
-router.patch('/update-beneficiary/:id', protect, restrictTo('admin'), adminController.updateBeneficiaryData);
+router.get('/incomplete-data', protect, restrictTo('admin','asha'), adminController.getIncompleteBeneficiaries);
+router.patch('/update-beneficiary/:id', protect, restrictTo('admin','asha'), adminController.updateBeneficiaryData);
 
 
 // Feature 3: Advanced Filtering

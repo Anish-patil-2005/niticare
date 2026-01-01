@@ -21,7 +21,7 @@ const Login = () => {
     try {
       const response = await authService.login({ username, password });
       handleLogin({ role: response.role, full_name: response.name, username }, response.token);
-      navigate(response.role === 'admin' ? '/admin/dashboard' : '/asha/home');
+      navigate(response.role === 'admin' ? '/admin/dashboard' : '/asha/beneficiaries');
     } catch (err) {
       setError('Invalid username or password.');
     } finally {

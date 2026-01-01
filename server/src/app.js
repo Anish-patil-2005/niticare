@@ -3,7 +3,8 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import authRoutes from './routes/authRoutes.js';
 import adminRoutes from './routes/adminRoutes.js'
-
+import ashaRoutes from './routes/ashaRoutes.js';
+import formRoutes from './routes/formRoutes.js';
 // Load environment variables
 dotenv.config();
 
@@ -32,7 +33,21 @@ app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/admin', adminRoutes);
 
 
+//asharoutes
+app.use('/api/v1/asha' ,ashaRoutes)
 
+//form Routes
+app.use('/api/v1/forms', formRoutes);
+
+
+import recordRoutes from './routes/recordRoutes.js';
+
+// ... other imports and middleware
+
+app.use('/api/v1/records', recordRoutes);
+
+import schedulesRoutes from './routes/schedulesRoutes.js'
+app.use('/api/v1/schedules', schedulesRoutes);
 
 // --- Global Error Handler ---
 // This prevents the server from crashing and hides stack traces in production

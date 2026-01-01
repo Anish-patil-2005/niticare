@@ -42,33 +42,18 @@ export const getIncompleteBeneficiaries = async (req, res) => {
 };
 
 export const updateBeneficiaryData = async (req, res) => {
+  const { id } = req.params;
   try {
-    const { id } = req.params;
-    const updates = req.body;
-
-    // 1. Update the record
-    await db('beneficiaries').where({ id }).update(updates);
-
-    // 2. Re-fetch the updated record to check completeness
-    const updatedRecord = await db('beneficiaries').where({ id }).first();
-
-    // 3. Logic: If Name, EDD, and Village now exist, mark as complete
-    const isNowComplete = !!(updatedRecord.name && updatedRecord.edd && updatedRecord.village);
-    
+    // Admin does NOT need the "assigned_asha_id" check
     await db('beneficiaries').where({ id }).update({
-      is_data_complete: isNowComplete
+      ...req.body,
+      updated_at: db.fn.now()
     });
-
-    res.status(200).json({
-      status: 'success',
-      message: 'Record updated successfully',
-      data: { ...updatedRecord, is_data_complete: isNowComplete }
-    });
+    res.json({ status: 'success', message: "Admin update successful" });
   } catch (error) {
-    res.status(500).json({ status: 'error', message: error.message });
+    res.status(500).json({ message: error.message });
   }
 };
-
 // Feature 3 
 
 export const getAllBeneficiaries = async (req, res) => {
@@ -394,17 +379,25 @@ export const getAllAshas = async (req, res) => {
 // Feature 8 : add or delete the dynamic forms
 export const createDynamicForm = async (req, res) => {
   try {
-    const { title, phase, schema } = req.body;
+    const { title, phase, schema, month_number, is_recurring, sort_order } = req.body;
 
     // Validation: Ensure schema is an array
     if (!Array.isArray(schema)) {
       return res.status(400).json({ message: "Form schema must be an array of fields" });
     }
 
+    // Validation: If Antenatal and not recurring, month_number is usually preferred
+    if (phase === 'antenatal' && !month_number && !is_recurring) {
+      return res.status(400).json({ message: "Please assign a month or set as recurring for Antenatal forms" });
+    }
+
     const [form] = await db('forms').insert({
       title,
       phase,
-      schema: JSON.stringify(schema)
+      schema: JSON.stringify(schema),
+      month_number: month_number || null,
+      is_recurring: is_recurring || false,
+      sort_order: sort_order || 0
     }).returning('*');
 
     res.status(201).json({ status: 'success', data: form });
@@ -416,15 +409,25 @@ export const createDynamicForm = async (req, res) => {
 export const getFormsByPhase = async (req, res) => {
   try {
     const { phase } = req.params;
+    const { month } = req.query; // Optional query param: ?month=3
+    
     let query = db('forms');
     
-    // If admin requests 'all', show everything. 
-    // Otherwise (for ASHA), show only active forms for that phase.
+    // If admin requests 'all', show everything.
     if (phase !== 'all') {
       query = query.where({ phase, is_active: true });
+
+      // Logic for Filtering by Month (e.g., for Antenatal Card View)
+      if (month) {
+        query = query.andWhere(function() {
+          this.where('month_number', month).orWhere('is_recurring', true);
+        });
+      }
     }
     
-    const forms = await query.orderBy('created_at', 'desc');
+    // Ordered by sort_order first, then newest
+    const forms = await query.orderBy('sort_order', 'asc').orderBy('created_at', 'desc');
+    
     res.status(200).json({ status: 'success', data: forms });
   } catch (error) {
     res.status(500).json({ status: 'error', message: error.message });
@@ -432,46 +435,41 @@ export const getFormsByPhase = async (req, res) => {
 };
 
 export const deleteForm = async (req, res) => {
+  const trx = await db.transaction(); // Start a transaction
   try {
     const { id } = req.params;
 
-    // 1. Optional Safety Check: Check if any responses exist for this form
-    // (We will build the 'responses' table in Module 1, but this is a placeholder for logic)
-    /*
-    const hasResponses = await db('form_responses').where({ form_id: id }).first();
-    if (hasResponses) {
-      return res.status(400).json({ 
-        message: "This form cannot be deleted because it already has submitted data. Try deactivating it instead." 
-      });
-    }
-    */
+    // 1. Delete all associated records first (The "Clean Sweep")
+    await trx('anc_records').where({ form_id: id }).del();
 
-    // 2. Delete the form
-    const deletedCount = await db('forms').where({ id }).del();
+    // 2. Delete the form itself
+    const deletedCount = await trx('forms').where({ id }).del();
 
     if (deletedCount === 0) {
+      await trx.rollback();
       return res.status(404).json({ status: 'error', message: 'Form not found' });
     }
 
-    res.status(200).json({ 
-      status: 'success', 
-      message: 'Form deleted successfully' 
-    });
+    await trx.commit();
+    res.status(200).json({ status: 'success', message: 'Form and associated test data deleted' });
   } catch (error) {
+    await trx.rollback();
     res.status(500).json({ status: 'error', message: error.message });
   }
 };
-
-// Also adding a "Deactivate" toggle (Professional touch)
-// This hides the form from ASHA workers without deleting the data history
 export const toggleFormStatus = async (req, res) => {
   try {
     const { id } = req.params;
     const form = await db('forms').where({ id }).first();
     
+    if (!form) return res.status(404).json({ message: "Form not found" });
+
     await db('forms').where({ id }).update({ is_active: !form.is_active });
     
-    res.status(200).json({ status: 'success', message: `Form ${form.is_active ? 'deactivated' : 'activated'}` });
+    res.status(200).json({ 
+        status: 'success', 
+        message: `Form ${form.is_active ? 'deactivated' : 'activated'}` 
+    });
   } catch (error) {
     res.status(500).json({ status: 'error', message: error.message });
   }
