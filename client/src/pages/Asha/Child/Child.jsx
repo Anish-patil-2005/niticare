@@ -2,10 +2,10 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { formService } from '../../../api/formService.js';
-import { scheduleService } from '../../../api/scheduleService.js';
+import { recordService } from '../../../api/recordService.js';
 import { 
-  ChevronRight, ClipboardList, Activity,
-  CheckCircle2, Baby, Calendar, Save, X, AlertCircle, Scale, Syringe, Trophy
+  ChevronRight, Activity, Edit3, Baby, 
+  History, Plus, Clock, LayoutList, Calendar
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -13,13 +13,12 @@ export const ChildCare = ({ phase = 'child_care' }) => {
   const { id: beneficiaryId } = useParams(); 
   const [loading, setLoading] = useState(true);
   const [forms, setForms] = useState([]);
-  const [schedulingId, setSchedulingId] = useState(null); 
-  const [selectedDate, setSelectedDate] = useState('');
+  const [expandedFormId, setExpandedFormId] = useState(null);
+  const [historyCache, setHistoryCache] = useState({}); 
 
   const navigate = useNavigate();
   const location = useLocation();
   const isAdminSection = location.pathname.includes('/admin');
-  const todayStr = new Date().toISOString().split('T')[0];
 
   useEffect(() => {
     if (beneficiaryId) loadData();
@@ -28,111 +27,151 @@ export const ChildCare = ({ phase = 'child_care' }) => {
   const loadData = async () => {
     try {
       setLoading(true);
-      // Ensure the API call passes the phase correctly
       const fRes = await formService.getDashboardForms(phase, beneficiaryId);
       const fetchedForms = fRes?.data || fRes || [];
-      
-      // Fix: Filter or map forms to ensure we have valid month data
       setForms(Array.isArray(fetchedForms) ? fetchedForms : []);
     } catch (err) {
-      console.error("Load Error:", err);
-      toast.error(`Failed to load child care forms`);
+      toast.error(`Failed to load forms`);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleFormClick = (form) => {
+  const handleFetchHistory = async (formId) => {
+  if (expandedFormId === formId) {
+    setExpandedFormId(null);
+    return;
+  }
+
+  try {
+    const res = await recordService.getExistingRecord(beneficiaryId, formId, 0, phase);
+    
+    // CHANGE THIS LINE:
+    // Your console shows 'res' is the array [{}, {}], not { data: [{}, {}] }
+    const rawRecords = Array.isArray(res) ? res : (res?.data || []);
+    
+    console.log("Processed rawRecords:", rawRecords); // This should now show length 2
+
+    const processedRecords = rawRecords.map(rec => ({
+      id: rec.id, 
+      timestamp: rec.created_at || rec.updated_at, 
+      // Handle data whether it's already an object or a JSON string
+      data: typeof rec.data === 'string' ? JSON.parse(rec.data) : rec.data,
+      month: rec.month_number
+    }));
+
+    setHistoryCache(prev => ({ ...prev, [formId]: processedRecords }));
+    setExpandedFormId(formId);
+  } catch (err) {
+    console.error("❌ History Load Error:", err);
+    toast.error("Failed to load history table");
+  }
+};
+
+  const handleNewSubmission = (form) => {
     const prefix = isAdminSection ? '/admin' : '/asha';
-    // FIX: Instead of hardcoded month=0, we use the month specified in the form plan
-    // or the child's current age month if available.
-    const targetMonth = form.current_target_month || 0;
-    navigate(`${prefix}/fill-form/${form.id}/${beneficiaryId}?month=${targetMonth}`);
+    // CLEAN NAVIGATE: No recordId ensures the backend performs an INSERT
+    navigate(`${prefix}/fill-form/${form.id}/${beneficiaryId}?month=${form.month_number || 0}&phase=${phase}`);
   };
 
-  const getFormIcon = (title) => {
-    const t = title?.toLowerCase() || '';
-    if (t.includes('growth') || t.includes('weight')) return <Scale size={18} />;
-    if (t.includes('vaccin') || t.includes('immun')) return <Syringe size={18} />;
-    if (t.includes('milestone') || t.includes('develop')) return <Trophy size={18} />;
-    return <ClipboardList size={18} />;
+  const handleEditSubmission = (formId, recordId, month) => {
+    const prefix = isAdminSection ? '/admin' : '/asha';
+    // EDIT NAVIGATE: Passing recordId ensures backend performs an UPDATE on that specific row
+    navigate(`${prefix}/fill-form/${formId}/${beneficiaryId}?month=${month || 0}&recordId=${recordId}&phase=${phase}`);
   };
 
   if (loading) return (
     <div className="py-20 flex flex-col items-center justify-center bg-white">
-      <Activity className="animate-spin text-indigo-600 mb-2" size={32} />
-      <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Syncing Child Records...</p>
+      <Activity className="animate-spin text-emerald-600 mb-2" size={32} />
+      <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Loading Records...</p>
     </div>
   );
 
   return (
-    <div className="bg-[#F8FAFC] min-h-screen pb-20">
-      <div className="bg-white px-6 py-8 border-b border-slate-100 shadow-sm mb-6">
-        <div className="flex items-center gap-4 mb-6">
-          <div className="w-14 h-14 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600 shadow-inner">
-            <Baby size={32} />
+    <div className="bg-[#F8FAFC] min-h-screen pb-20 font-sans px-4">
+      {/* Header */}
+      <div className="bg-white rounded-3xl p-6 mb-6 shadow-sm border border-slate-100 mt-4">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 bg-emerald-500 rounded-2xl flex items-center justify-center text-white">
+            <Baby size={24} />
           </div>
           <div>
-            <h1 className="text-2xl font-black text-slate-800 capitalize">Child Care</h1>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">0 — 5 Years Growth & Health</p>
+            <h1 className="text-xl font-black text-slate-800 tracking-tight uppercase">Growth Log</h1>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Independent Entry History</p>
           </div>
         </div>
       </div>
 
-      <div className="px-6 space-y-6 relative">
-        {/* Timeline vertical line */}
-        {forms.length > 0 && (
-            <div className="absolute left-[2.75rem] top-4 bottom-4 w-0.5 bg-slate-100 z-0" />
-        )}
-
-        {forms.length > 0 ? forms.map((form, index) => {
-          const isDone = form.completed_months?.length > 0 || form.is_completed;
-          const isPlanning = schedulingId === form.id;
-          const isMissed = !isDone && form.planned_date && new Date(form.planned_date) < new Date().setHours(0,0,0,0);
-          
-          return (
-            <div key={form.id} className="relative z-10">
-              <div className="flex items-start gap-4">
-                <div className={`mt-2 w-10 h-10 rounded-xl flex items-center justify-center border-2 shrink-0 transition-all shadow-sm
-                  ${isDone ? 'bg-emerald-500 border-emerald-500 text-white' 
-                  : isMissed ? 'bg-rose-500 border-rose-500 text-white animate-pulse'
-                  : 'bg-white border-slate-200 text-slate-400'}`}>
-                  {isDone ? <CheckCircle2 size={18} /> : isMissed ? <AlertCircle size={18} /> : <span className="text-xs font-black">{index + 1}</span>}
+      <div className="space-y-4">
+        {forms.map((form) => (
+          <div key={form.id} className="bg-white rounded-[1.8rem] border border-slate-200 overflow-hidden shadow-sm">
+            <div className="p-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                  <LayoutList size={18} />
                 </div>
-
-                <div className="flex-1 flex gap-2">
-                  <button
-                    onClick={() => handleFormClick(form)}
-                    className={`flex-1 p-5 rounded-[1.8rem] border text-left transition-all active:scale-[0.98]
-                      ${isDone ? 'bg-white border-emerald-100 shadow-sm' : isMissed ? 'bg-rose-50 border-rose-200' : 'bg-white border-slate-100'}`}
-                  >
-                    <div className="flex justify-between items-start">
-                      <div className="space-y-1.5">
-                        <div className="flex items-center gap-2">
-                          <span className={isDone ? 'text-emerald-500' : isMissed ? 'text-rose-500' : 'text-indigo-400'}>
-                            {getFormIcon(form.title)}
-                          </span>
-                          <h4 className="font-black text-sm uppercase tracking-tight text-slate-700">{form.title}</h4>
-                        </div>
-                        <p className="text-[10px] font-bold uppercase text-slate-400">
-                           {/* Show which month this assessment is for */}
-                           {form.month_number ? `Month ${form.month_number}` : 'Ongoing Assessment'}
-                        </p>
-                      </div>
-                      <ChevronRight size={18} className="text-slate-300" />
-                    </div>
-                  </button>
-                </div>
+                <h4 className="font-bold text-sm text-slate-700">{form.title}</h4>
+              </div>
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={() => handleFetchHistory(form.id)}
+                  className={`p-2.5 rounded-xl border transition-all ${expandedFormId === form.id ? 'bg-slate-800 text-white' : 'bg-white text-slate-400 border-slate-200'}`}
+                >
+                  <History size={18} />
+                </button>
+                <button 
+                  onClick={() => handleNewSubmission(form)}
+                  className="bg-emerald-600 text-white p-2.5 rounded-xl shadow-md"
+                >
+                  <Plus size={18} />
+                </button>
               </div>
             </div>
-          );
-        }) : (
-          <div className="py-20 text-center bg-white rounded-[2rem] border border-dashed border-slate-200">
-            <ClipboardList className="mx-auto text-slate-200 mb-4" size={48} />
-            <p className="text-sm font-bold text-slate-400 uppercase">No active forms for this child</p>
-            <p className="text-[10px] text-slate-300 px-10 mt-2 uppercase">Forms appear based on the child's age (Months 0-60)</p>
+
+            {expandedFormId === form.id && (
+              <div className="overflow-x-auto border-t border-slate-100">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-slate-50 text-[9px] font-black text-slate-400 uppercase tracking-wider">
+                      <th className="px-5 py-3">Date</th>
+                      <th className="px-5 py-3">Month</th>
+                      <th className="px-5 py-3 text-right">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-50">
+                    {(historyCache[form.id] || []).map((entry) => (
+                      <tr key={entry.id} className="hover:bg-emerald-50/30 transition-colors">
+                        <td className="px-5 py-4">
+                          <div className="flex flex-col">
+                            <span className="text-[11px] font-bold text-slate-700">
+                              {new Date(entry.timestamp).toLocaleDateString('en-IN')}
+                            </span>
+                            <span className="text-[9px] text-slate-400">
+                              {new Date(entry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-5 py-4">
+                          <span className="text-[10px] font-black bg-slate-100 text-slate-500 px-2 py-1 rounded">
+                            M-{entry.month}
+                          </span>
+                        </td>
+                        <td className="px-5 py-4 text-right">
+                          <button 
+                            onClick={() => handleEditSubmission(form.id, entry.id, entry.month)}
+                            className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-600 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase"
+                          >
+                            <Edit3 size={12} /> Edit
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
-        )}
+        ))}
       </div>
     </div>
   );

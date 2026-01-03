@@ -156,8 +156,8 @@ const BeneficiaryDashboard = () => {
           <div className="p-2 md:p-4">
              {activeTab === 'Antenatal' && <AntenatalDashboard />}
              {activeTab === 'Postnatal' && <Postnatal />}
-             {activeTab === 'Child' && <ChildCare />}
-          </div>
+             {activeTab === 'Child' && <ChildCare phase="child_care" />}         
+          </div> 
         </section>
       </main>
     </div>

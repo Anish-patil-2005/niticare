@@ -81,19 +81,29 @@ const FillForm = () => {
     handleInputChange(fieldName, newValues);
   };
 
-  const handleSubmit = async (e) => {
+ const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
+
+    // 1. Get phase and recordId from URL
+    const recordId = searchParams.get('recordId');
+    const phase = searchParams.get('phase');
+
     try {
       const payload = {
         beneficiary_id: parseInt(beneficiaryId),
         form_id: formId,
         month_number: parseInt(month),
-        data: formData 
+        data: formData,
+        // 2. CRITICAL: Include these so the backend handles logic correctly
+        phase: phase, 
+        recordId: recordId || null 
       };
 
+      console.log("🚀 Submitting Payload:", payload); // Check this in your browser console
+
       await recordService.saveANCRecord(payload);
-      toast.success("Assessment Saved Successfully");
+      toast.success(recordId ? "Entry Updated" : "New Entry Created");
       navigate(-1);
     } catch (err) {
       console.error("Save error:", err);
@@ -102,7 +112,6 @@ const FillForm = () => {
       setSaving(false);
     }
   };
-
   if (loading) return (
     <div className="h-screen flex flex-col items-center justify-center gap-4 bg-white">
       <Loader2 className="animate-spin text-emerald-600" size={40} />

@@ -1,5 +1,5 @@
 import express from 'express';
-import { saveANCRecord, getANCRecord } from '../controllers/recordController.js';
+import { saveANCRecord, getANCRecord, getRecordById } from '../controllers/recordController.js';
 import { protect } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
@@ -9,5 +9,7 @@ router.get('/get-single', protect, getANCRecord);
 
 // Save or Update data
 router.post('/save', protect, saveANCRecord);
+
+router.get('/detail/:id', protect,getRecordById);
 
 export default router;

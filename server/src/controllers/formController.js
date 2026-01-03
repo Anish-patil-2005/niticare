@@ -21,7 +21,9 @@ export const getDashboardForms = async (req, res) => {
       .select(
         'f.*',
         's.scheduled_date as planned_date',
+        
         's.id as schedule_id',
+        
         // Returns a boolean for simple forms
         db.raw('COUNT(r.id) > 0 as is_completed'),
         // Returns an array of months for recurring forms (e.g., [1, 2, 5])

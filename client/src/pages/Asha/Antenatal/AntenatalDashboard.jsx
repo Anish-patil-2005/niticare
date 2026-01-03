@@ -6,7 +6,7 @@ import { scheduleService } from '../../../api/scheduleService.js';
 import { 
   ChevronRight, ClipboardList, Activity,
   CheckCircle2, LayoutDashboard, Calendar, Save, X,
-  AlertCircle
+  AlertCircle, Clock
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -14,6 +14,7 @@ export const AntenatalDashboard = () => {
   const { id: beneficiaryId } = useParams(); 
   const [loading, setLoading] = useState(true);
   const [forms, setForms] = useState([]);
+  const [schedules, setSchedules] = useState([]); // Store planned visits
   const [schedulingId, setSchedulingId] = useState(null); 
   const [selectedDate, setSelectedDate] = useState('');
 
@@ -29,11 +30,19 @@ export const AntenatalDashboard = () => {
   const loadData = async () => {
     try {
       setLoading(true);
-      const fRes = await formService.getDashboardForms('antenatal', beneficiaryId);
+      // Fetch forms and schedules in parallel
+      const [fRes, sRes] = await Promise.all([
+        formService.getDashboardForms('antenatal', beneficiaryId),
+        scheduleService.getSchedulesByBeneficiary(beneficiaryId)
+      ]);
+
       const fetchedForms = fRes?.data || fRes || [];
+      const fetchedSchedules = sRes?.data || sRes || [];
+
       setForms(Array.isArray(fetchedForms) ? fetchedForms : []);
+      setSchedules(Array.isArray(fetchedSchedules) ? fetchedSchedules : []);
     } catch (err) {
-      toast.error("Failed to load timeline forms");
+      toast.error("Failed to load timeline data");
     } finally {
       setLoading(false);
     }
@@ -45,7 +54,8 @@ export const AntenatalDashboard = () => {
       await scheduleService.planVisit(beneficiaryId, formId, selectedDate);
       toast.success("Visit Scheduled");
       setSchedulingId(null);
-      loadData(); 
+      setSelectedDate('');
+      loadData(); // Re-fetch to show the new date badge
     } catch (err) {
       toast.error("Failed to schedule");
     }
@@ -72,7 +82,7 @@ export const AntenatalDashboard = () => {
 
   const monthSlots = [1, 2, 3, 4, 5, 6, 7, 8, 9];
   
-  // Calculate Progress Stats
+  // Progress Calculations
   let totalTasks = 0;
   let completedTasks = 0;
   monthSlots.forEach(m => {
@@ -113,7 +123,7 @@ export const AntenatalDashboard = () => {
           </div>
         </div>
 
-        {/* --- MONTHLY GRID (3x3 on Desktop, 1 Column on Mobile) --- */}
+        {/* --- MONTHLY GRID --- */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {monthSlots.map((m) => {
             const monthlyForms = getFormsForMonth(m);
@@ -129,20 +139,22 @@ export const AntenatalDashboard = () => {
                   </div>
                   <div>
                     <h3 className="font-black text-slate-800 text-md uppercase tracking-tight">Month {m}</h3>
-                    <div className="flex items-center gap-2">
-                       <span className={`text-[9px] font-black px-2 py-0.5 rounded-full ${isMonthFullyDone ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
-                        {completedCount}/{monthlyForms.length} COMPLETED
-                       </span>
-                    </div>
+                    <span className={`text-[9px] font-black px-2 py-0.5 rounded-full ${isMonthFullyDone ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
+                      {completedCount}/{monthlyForms.length} COMPLETED
+                    </span>
                   </div>
                 </div>
 
-                {/* Forms List inside Month Card */}
+                {/* Forms List */}
                 <div className="p-4 flex-1 space-y-3">
                   {monthlyForms.map((form) => {
                     const isDone = isFormDoneInMonth(form, m);
                     const isPlanning = schedulingId === `${m}-${form.id}`;
-                    const isMissed = !isDone && form.planned_date && new Date(form.planned_date) < new Date().setHours(0,0,0,0);
+                    
+                    // Match schedule from state
+                    const activeSched = schedules.find(s => s.form_id === form.id && s.status === 'planned');
+                    const displayDate = activeSched?.scheduled_date;
+                    const isMissed = !isDone && displayDate && new Date(displayDate) < new Date().setHours(0,0,0,0);
 
                     return (
                       <div key={`${m}-${form.id}`} className="space-y-2">
@@ -158,9 +170,18 @@ export const AntenatalDashboard = () => {
                                <div className={`${isDone ? 'text-emerald-500' : isMissed ? 'text-rose-500' : 'text-slate-300'}`}>
                                  {isDone ? <CheckCircle2 size={16} /> : <ClipboardList size={16} />}
                                </div>
-                               <span className={`text-[11px] font-bold uppercase truncate tracking-tighter ${isDone ? 'text-emerald-900' : 'text-slate-700'}`}>
-                                 {form.title}
-                               </span>
+                               <div className="flex flex-col">
+                                 <span className={`text-[11px] font-bold uppercase truncate tracking-tighter ${isDone ? 'text-emerald-900' : 'text-slate-700'}`}>
+                                   {form.title}
+                                 </span>
+                                 {/* DATE BADGE */}
+                                 {!isDone && displayDate && (
+                                   <span className={`text-[9px] font-black flex items-center gap-1 mt-0.5 ${isMissed ? 'text-rose-600 animate-pulse' : 'text-indigo-600'}`}>
+                                     <Calendar size={10} />
+                                     {isMissed ? 'MISSED: ' : 'PLAN: '}{new Date(displayDate).toLocaleDateString('en-IN')}
+                                   </span>
+                                 )}
+                               </div>
                             </div>
                             <ChevronRight size={14} className="text-slate-300 shrink-0" />
                           </button>
@@ -175,21 +196,30 @@ export const AntenatalDashboard = () => {
                           )}
                         </div>
 
-                        {/* Inline Scheduler within Grid Cell */}
+                        {/* Inline Scheduler */}
                         {isPlanning && (
                           <div className="flex flex-col gap-2 p-3 bg-indigo-50 rounded-xl animate-in fade-in zoom-in duration-200">
+                            <label className="text-[9px] font-black text-indigo-400 uppercase ml-1">Select Visit Date</label>
                             <input 
                               type="date" 
                               min={todayStr}
                               className="w-full bg-white border border-indigo-100 rounded-lg p-2 text-[10px] font-bold outline-none"
                               onChange={(e) => setSelectedDate(e.target.value)}
                             />
-                            <button 
-                              onClick={() => handleScheduleSave(form.id)}
-                              className="w-full bg-indigo-600 text-white py-2 rounded-lg text-[10px] font-black uppercase flex items-center justify-center gap-2"
-                            >
-                              <Save size={12} /> Save Visit
-                            </button>
+                            <div className="flex gap-2">
+                              <button 
+                                onClick={() => handleScheduleSave(form.id)}
+                                className="flex-1 bg-indigo-600 text-white py-2 rounded-lg text-[10px] font-black uppercase flex items-center justify-center gap-2"
+                              >
+                                <Save size={12} /> Save
+                              </button>
+                              <button 
+                                onClick={() => setSchedulingId(null)}
+                                className="px-3 bg-white text-slate-400 py-2 rounded-lg border border-slate-200"
+                              >
+                                <X size={12} />
+                              </button>
+                            </div>
                           </div>
                         )}
                       </div>
