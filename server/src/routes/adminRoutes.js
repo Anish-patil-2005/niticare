@@ -49,6 +49,14 @@ router.get('/dashboard', protect, restrictTo('admin'), adminController.getDashbo
 router.get('/ashas', protect, restrictTo('admin'), adminController.getAllAshas); // Get List
 router.post('/ashas', protect, restrictTo('admin'), adminController.addAshaWorker); // Create
 router.delete('/ashas/:id', protect, restrictTo('admin'), adminController.deleteAshaWorker); // Delete
+router.post(
+    '/bulk-asha', 
+    protect, 
+    restrictTo('admin'), 
+    upload.single('asha_file'), // The key name for the file in the form-data
+    adminController.bulkAddAsha
+);
+
 
 //Feature 8 :  Form Management Routes
 router.post('/forms', protect, restrictTo('admin'), adminController.createDynamicForm);

@@ -223,23 +223,19 @@ export const getAssignments = async (req, res) => {
 
 export const getDashboardStats = async (req, res) => {
   try {
-    // We execute all counters in parallel for maximum performance
     const [total, unassigned, incomplete, highRisk] = await Promise.all([
       // 1. Total Registrations
       db('beneficiaries').count('id as count').first(),
 
-      // 2. Pending Allocation (Women not yet assigned to an ASHA)
+      // 2. Pending Allocation
       db('beneficiaries').whereNull('assigned_asha_id').count('id as count').first(),
 
-      // 3. Data Cleaning Needed (Mandatory fields missing)
+      // 3. Data Cleaning Needed
       db('beneficiaries').where({ is_data_complete: false }).count('id as count').first(),
 
-      // 4. High Risk Cases
-      // We cast JSONB to text using ::text to allow ILIKE searching
+      // 4. High Risk Cases (USING THE COLUMN DIRECTLY)
       db('beneficiaries')
-        .where(db.raw('??::text ILIKE ?', ['medical_fields', '%High Risk%']))
-        .orWhere(db.raw('??::text ILIKE ?', ['medical_fields', '%Anaemic%']))
-        .orWhere(db.raw('??::text ILIKE ?', ['medical_fields', '%High BP%']))
+        .where('is_high_risk', true) // or .where('is_high_risk', 1) for MySQL
         .count('id as count')
         .first()
     ]);
@@ -256,11 +252,7 @@ export const getDashboardStats = async (req, res) => {
     });
   } catch (error) {
     console.error("Dashboard Error:", error);
-    res.status(500).json({ 
-      status: 'error', 
-      message: 'Failed to fetch dashboard statistics',
-      details: error.message 
-    });
+    res.status(500).json({ status: 'error', message: error.message });
   }
 };
 
@@ -302,6 +294,29 @@ export const addAshaWorker = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+// 1. b) Add bulk add asha one go
+
+export const bulkAddAsha = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ status: 'error', message: 'No CSV file uploaded' });
+    }
+
+    // Pass the file path to the service
+    const recordCount = await dataSyncService.importAshaCsv(req.file.path);
+
+    res.status(200).json({
+      status: 'success',
+      message: `Onboarding complete. ${recordCount} ASHA workers registered successfully.`,
+    });
+  } catch (error) {
+    console.error("Bulk Registration Error:", error);
+    res.status(500).json({ status: 'error', message: error.message });
+  }
+};
+
+
 // 2. Delete an ASHA Worker
 export const deleteAshaWorker = async (req, res) => {
   try {
@@ -336,7 +351,8 @@ export const getAllAshas = async (req, res) => {
         'id', 
         'full_name', 
         'username',   // Corrected from email
-        'village', 
+        'village',
+        'contact_number', 
         'is_active', 
         'created_at'
       )

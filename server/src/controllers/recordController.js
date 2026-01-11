@@ -53,62 +53,72 @@ export const saveANCRecord = async (req, res) => {
   const trx = await db.transaction();
   
   try {
-    const { beneficiary_id, form_id, month_number, data, recordId, phase } = req.body;
+    const { beneficiary_id, form_id, month_number, data, recordId } = req.body;
     const bId = parseInt(beneficiary_id);
     const mNum = parseInt(month_number);
 
-    // CASE 1: EDITING A SPECIFIC ENTRY (No overwriting others)
+    // --- 1. FIND EXISTING RECORD ---
+    // We look for a record by ID or by the unique combination of Ben+Form+Month
+    let existingRecord = null;
+
     if (recordId) {
-      console.log(`Updating specific record ID: ${recordId}`);
+      existingRecord = await trx('anc_records').where({ id: recordId }).first();
+    } else {
+      existingRecord = await trx('anc_records')
+        .where({ 
+          beneficiary_id: bId, 
+          form_id: form_id, 
+          month_number: mNum 
+        })
+        .first();
+    }
+
+    // --- 2. INSERT OR UPDATE ---
+    if (existingRecord) {
+      // UPDATE: Avoid creating a duplicate
       await trx('anc_records')
-        .where({ id: recordId })
+        .where({ id: existingRecord.id })
         .update({
           data: JSON.stringify(data),
           updated_at: trx.fn.now()
         });
-    } 
-    // CASE 2: NEW ENTRY FOR CHILD CARE (Always create a new row)
-    else if (phase === 'child' || phase === 'child_care') {
-      console.log(`Creating new historical entry for child phase`);
+    } else {
+      // INSERT: Only if it doesn't exist
       await trx('anc_records').insert({
         beneficiary_id: bId,
-        form_id,
+        form_id: form_id,
         month_number: mNum,
         data: JSON.stringify(data),
-        created_at: trx.fn.now()
+        created_at: trx.fn.now(),
+        updated_at: trx.fn.now()
       });
-    } 
-    // CASE 3: STANDARD ANC (Maintain one record per month)
-    else {
-      const existing = await trx('anc_records')
-        .where({ beneficiary_id: bId, form_id, month_number: mNum })
-        .first();
-
-      if (existing) {
-        await trx('anc_records')
-          .where({ id: existing.id })
-          .update({
-            data: JSON.stringify(data),
-            updated_at: trx.fn.now()
-          });
-      } else {
-        await trx('anc_records').insert({
-          beneficiary_id: bId,
-          form_id,
-          month_number: mNum,
-          data: JSON.stringify(data)
-        });
-      }
     }
 
+    // --- 3. UPDATE SCHEDULE STATUS ---
+    // We only update the schedule if it's currently 'planned'
+    await trx('schedules')
+      .where({
+        beneficiary_id: bId,
+        form_id: form_id,
+        status: 'planned'
+      })
+      .update({
+        status: 'completed',
+        updated_at: trx.fn.now()
+      });
+
     await trx.commit();
-    res.status(200).json({ status: 'success', message: 'Record Processed' });
+    res.status(200).json({ 
+      status: 'success', 
+      message: existingRecord ? 'Record updated successfully' : 'New record created and schedule updated' 
+    });
+
   } catch (error) {
     await trx.rollback();
+    console.error("ANC Save Error:", error);
     res.status(500).json({ status: 'error', message: error.message });
   }
 };
-
 // server/src/controllers/recordController.js
 
 export const getRecordById = async (req, res) => {

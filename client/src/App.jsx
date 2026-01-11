@@ -15,6 +15,8 @@ import RegisterBeneficiary from "./pages/Asha/RegisterBeneficiary.jsx";
 import BeneficiaryDashboard from "./pages/Admin/BeneficiaryDashboard.jsx";
 import { AntenatalDashboard } from "./pages/Asha/Antenatal/AntenatalDashboard.jsx";
 import FillForm from "./pages/Asha/FillForm.jsx";
+import AshaDashboard from "./pages/Asha/AshaDashboard.jsx";
+import Profile from "./pages/Common/Profile.jsx";
 
 // Temporary Components for testing
 const Unauthorized = () => (
@@ -44,6 +46,7 @@ function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/unauthorized" element={<Unauthorized />} />
 
+
         {/* Protected Admin Routes */}
         <Route
           path="/admin"
@@ -68,6 +71,9 @@ function App() {
 
           <Route path="fill-form/:formId/:beneficiaryId" element={<FillForm />} />
 
+          <Route path="profile" element={<Profile />} />
+
+
         </Route>
 
         {/* Protected ASHA Routes */}
@@ -80,6 +86,9 @@ function App() {
           }
         >
           <Route index element={<Navigate to="dashboard" replace />} />
+
+          <Route path="dashboard" element={<AshaDashboard />} />
+
           <Route path="beneficiaries" element={<BeneficiaryDirectory mode="asha" />} />
           <Route path="beneficiary/:id" element={<BeneficiaryDashboard mode="asha" />} />
           <Route path="antenatal/:beneficiaryId" element={<AntenatalDashboard />} />
@@ -87,6 +96,11 @@ function App() {
           <Route path="register" element={<RegisterBeneficiary />} />
           <Route path="edit/:id" element={<RegisterBeneficiary />} />
           <Route path="fill-form/:formId/:beneficiaryId" element={<FillForm />} />
+
+
+          <Route path="profile" element={<Profile />} />
+
+
         </Route>
 
         {/* Default Redirect */}

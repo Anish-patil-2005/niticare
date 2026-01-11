@@ -17,6 +17,8 @@ router.delete(
 
 router.patch('/update-beneficiary/:id', protect, restrictTo('asha'), ashaController.updateMyBeneficiary);
 
-
+// stats
+router.get('/stats',protect,restrictTo('asha'),ashaController.getAshaStats);
+router.get('/tasks/today', protect, restrictTo('asha'), ashaController.getTodayPriorityTasks);
 
 export default router;

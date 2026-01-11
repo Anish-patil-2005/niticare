@@ -1,10 +1,14 @@
+/* eslint-disable no-unused-vars */
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { authService } from '../api/authService';
 import { User, Lock, ArrowRight, HeartPulse, Loader2 } from 'lucide-react';
+import { LanguageSelector } from '../components/LanguageSelector';
 
 const Login = () => {
+  const { t } = useTranslation();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -21,52 +25,93 @@ const Login = () => {
     try {
       const response = await authService.login({ username, password });
       handleLogin({ role: response.role, full_name: response.name, username }, response.token);
-      navigate(response.role === 'admin' ? '/admin/dashboard' : '/asha/beneficiaries');
+      navigate(response.role === 'admin' ? '/admin/dashboard' : '/asha/dashboard');
     } catch (err) {
-      setError('Invalid username or password.');
+      setError(t('auth.error_invalid'));
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="h-screen w-full flex items-center justify-center p-6">
-      <div className="card-niti w-full max-w-md animate-in fade-in zoom-in duration-500">
-        <div className="text-center mb-10">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-primary-glow text-primary mb-4">
-            <HeartPulse size={40} />
+    /* Changed min-h-screen and py-10 for scroll safety at 100% zoom */
+    <div className="min-h-screen w-full flex items-center justify-center p-6 bg-slate-50 relative overflow-y-auto py-10">
+      
+      {/* Replaced inline code with the LanguageSelector component */}
+      <LanguageSelector isAbsolute={true} />
+
+      <div className="card-niti w-full max-w-md animate-in fade-in zoom-in duration-500 my-auto">
+        {/* Adjusted spacing to match the optimized Register layout */}
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-3xl bg-primary-glow text-primary mb-4">
+            <HeartPulse size={36} />
           </div>
-          <h1 className="text-4xl font-black text-slate-800 tracking-tight">NitiCare</h1>
-          <p className="text-slate-400 font-bold mt-1 uppercase tracking-[0.2em] text-[10px]">Professional Portal</p>
+          <h1 className="text-3xl font-black text-slate-800 tracking-tight">NitiCare</h1>
+          <p className="text-slate-400 font-bold mt-1 uppercase tracking-[0.2em] text-[10px]">
+            {t('auth.portal_subtitle')}
+          </p>
         </div>
 
-        <form onSubmit={onSubmit} className="space-y-6">
-          <div className="space-y-2">
-            <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-1">Username</label>
+        <form onSubmit={onSubmit} className="space-y-5">
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">
+              {t('auth.username')}
+            </label>
             <div className="relative group">
-              <User className="absolute left-4 top-4 text-slate-400 group-focus-within:text-primary transition-colors" size={20} />
-              <input type="text" required className="input-niti" placeholder="Enter username" value={username} onChange={(e) => setUsername(e.target.value)} />
+              <User className="absolute left-4 top-3.5 text-slate-400 group-focus-within:text-primary transition-colors" size={20} />
+              <input 
+                type="text" 
+                required 
+                className="input-niti py-2.5" 
+                placeholder={t('auth.username_placeholder')} 
+                value={username} 
+                onChange={(e) => setUsername(e.target.value)} 
+              />
             </div>
           </div>
 
-          <div className="space-y-2">
-            <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-1">Password</label>
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">
+              {t('auth.password')}
+            </label>
             <div className="relative group">
-              <Lock className="absolute left-4 top-4 text-slate-400 group-focus-within:text-primary transition-colors" size={20} />
-              <input type="password" required className="input-niti" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} />
+              <Lock className="absolute left-4 top-3.5 text-slate-400 group-focus-within:text-primary transition-colors" size={20} />
+              <input 
+                type="password" 
+                required 
+                className="input-niti py-2.5" 
+                placeholder={t('auth.password_placeholder')} 
+                value={password} 
+                onChange={(e) => setPassword(e.target.value)} 
+              />
             </div>
           </div>
 
-          {error && <div className="p-4 bg-red-50 text-red-600 rounded-2xl text-xs font-bold border border-red-100">{error}</div>}
+          {error && (
+            <div className="p-3 bg-red-50 text-red-600 rounded-2xl text-[11px] font-bold border border-red-100">
+              {error}
+            </div>
+          )}
 
-          <button type="submit" disabled={isLoading} className="btn-primary-niti">
-            {isLoading ? <Loader2 className="animate-spin" size={24} /> : <>Sign In <ArrowRight size={20} /></>}
+          <button type="submit" disabled={isLoading} className="btn-primary-niti mt-2">
+            {isLoading ? (
+              <Loader2 className="animate-spin" size={22} />
+            ) : (
+              <>
+                {t('auth.login_btn')} <ArrowRight size={20} />
+              </>
+            )}
           </button>
         </form>
 
-        <p className="mt-8 text-center text-sm text-slate-500 font-medium">
-          New here? <Link to="/register" className="text-primary font-black hover:underline underline-offset-8">Create Account</Link>
-        </p>
+        <div className="mt-8 text-center">
+          <p className="text-sm text-slate-500 font-medium">
+            {t('auth.new_here')}{' '}
+            <Link to="/register" className="text-primary font-black hover:underline underline-offset-8">
+              {t('auth.register_title')}
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );

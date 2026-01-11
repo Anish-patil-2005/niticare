@@ -1,6 +1,7 @@
 /* eslint-disable no-unused-vars */
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next'; // Added
 import { formService } from '../../../api/formService.js';
 import { recordService } from '../../../api/recordService.js';
 import { 
@@ -10,6 +11,7 @@ import {
 import toast from 'react-hot-toast';
 
 export const ChildCare = ({ phase = 'child_care' }) => {
+  const { t } = useTranslation(); // Initialize hook
   const { id: beneficiaryId } = useParams(); 
   const [loading, setLoading] = useState(true);
   const [forms, setForms] = useState([]);
@@ -31,59 +33,50 @@ export const ChildCare = ({ phase = 'child_care' }) => {
       const fetchedForms = fRes?.data || fRes || [];
       setForms(Array.isArray(fetchedForms) ? fetchedForms : []);
     } catch (err) {
-      toast.error(`Failed to load forms`);
+      toast.error(t('child_care.load_error'));
     } finally {
       setLoading(false);
     }
   };
 
   const handleFetchHistory = async (formId) => {
-  if (expandedFormId === formId) {
-    setExpandedFormId(null);
-    return;
-  }
+    if (expandedFormId === formId) {
+      setExpandedFormId(null);
+      return;
+    }
 
-  try {
-    const res = await recordService.getExistingRecord(beneficiaryId, formId, 0, phase);
-    
-    // CHANGE THIS LINE:
-    // Your console shows 'res' is the array [{}, {}], not { data: [{}, {}] }
-    const rawRecords = Array.isArray(res) ? res : (res?.data || []);
-    
-    console.log("Processed rawRecords:", rawRecords); // This should now show length 2
+    try {
+      const res = await recordService.getExistingRecord(beneficiaryId, formId, 0, phase);
+      const rawRecords = Array.isArray(res) ? res : (res?.data || []);
+      
+      const processedRecords = rawRecords.map(rec => ({
+        id: rec.id, 
+        timestamp: rec.created_at || rec.updated_at, 
+        data: typeof rec.data === 'string' ? JSON.parse(rec.data) : rec.data,
+        month: rec.month_number
+      }));
 
-    const processedRecords = rawRecords.map(rec => ({
-      id: rec.id, 
-      timestamp: rec.created_at || rec.updated_at, 
-      // Handle data whether it's already an object or a JSON string
-      data: typeof rec.data === 'string' ? JSON.parse(rec.data) : rec.data,
-      month: rec.month_number
-    }));
-
-    setHistoryCache(prev => ({ ...prev, [formId]: processedRecords }));
-    setExpandedFormId(formId);
-  } catch (err) {
-    console.error("❌ History Load Error:", err);
-    toast.error("Failed to load history table");
-  }
-};
+      setHistoryCache(prev => ({ ...prev, [formId]: processedRecords }));
+      setExpandedFormId(formId);
+    } catch (err) {
+      toast.error(t('child_care.history_error'));
+    }
+  };
 
   const handleNewSubmission = (form) => {
     const prefix = isAdminSection ? '/admin' : '/asha';
-    // CLEAN NAVIGATE: No recordId ensures the backend performs an INSERT
     navigate(`${prefix}/fill-form/${form.id}/${beneficiaryId}?month=${form.month_number || 0}&phase=${phase}`);
   };
 
   const handleEditSubmission = (formId, recordId, month) => {
     const prefix = isAdminSection ? '/admin' : '/asha';
-    // EDIT NAVIGATE: Passing recordId ensures backend performs an UPDATE on that specific row
     navigate(`${prefix}/fill-form/${formId}/${beneficiaryId}?month=${month || 0}&recordId=${recordId}&phase=${phase}`);
   };
 
   if (loading) return (
     <div className="py-20 flex flex-col items-center justify-center bg-white">
       <Activity className="animate-spin text-emerald-600 mb-2" size={32} />
-      <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Loading Records...</p>
+      <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">{t('child_care.loading')}</p>
     </div>
   );
 
@@ -96,8 +89,8 @@ export const ChildCare = ({ phase = 'child_care' }) => {
             <Baby size={24} />
           </div>
           <div>
-            <h1 className="text-xl font-black text-slate-800 tracking-tight uppercase">Growth Log</h1>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Independent Entry History</p>
+            <h1 className="text-xl font-black text-slate-800 tracking-tight uppercase">{t('child_care.growth_log')}</h1>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t('child_care.sub_header')}</p>
           </div>
         </div>
       </div>
@@ -133,9 +126,8 @@ export const ChildCare = ({ phase = 'child_care' }) => {
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="bg-slate-50 text-[9px] font-black text-slate-400 uppercase tracking-wider">
-                      <th className="px-5 py-3">Date</th>
-                      <th className="px-5 py-3">Month</th>
-                      <th className="px-5 py-3 text-right">Action</th>
+                      <th className="px-5 py-3">{t('child_care.date')}</th>
+                      <th className="px-5 py-3 text-right">{t('child_care.action')}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-50">
@@ -151,17 +143,12 @@ export const ChildCare = ({ phase = 'child_care' }) => {
                             </span>
                           </div>
                         </td>
-                        <td className="px-5 py-4">
-                          <span className="text-[10px] font-black bg-slate-100 text-slate-500 px-2 py-1 rounded">
-                            M-{entry.month}
-                          </span>
-                        </td>
                         <td className="px-5 py-4 text-right">
                           <button 
                             onClick={() => handleEditSubmission(form.id, entry.id, entry.month)}
                             className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-600 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase"
                           >
-                            <Edit3 size={12} /> Edit
+                            <Edit3 size={12} /> {t('child_care.edit')}
                           </button>
                         </td>
                       </tr>

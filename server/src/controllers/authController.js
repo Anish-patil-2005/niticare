@@ -1,4 +1,5 @@
 import * as authService from '../services/authServices.js';
+import db from '../db/knex.js';
 
 export const login = async (req, res) => {
   try {
@@ -96,5 +97,50 @@ export const signup = async (req, res) => {
       status: 'fail',
       message: error.message
     });
+  }
+};
+
+
+
+export const getProfile = async (req, res) => {
+  try {
+    const user = await db('users')
+      .where({ id: req.user.id })
+      .first([
+        'id', 
+        'full_name',      // Matches your DB
+        'username',       // Matches your DB (instead of email)
+        'role', 
+        'contact_number', // Matches your DB (instead of phone)
+        'village', 
+        'created_at'
+      ]);
+
+    if (!user) {
+      return res.status(404).json({ status: 'fail', message: 'User not found' });
+    }
+
+    res.status(200).json({ status: 'success', data: user });
+  } catch (error) {
+    res.status(500).json({ status: 'error', message: error.message });
+  }
+};
+
+export const updateProfile = async (req, res) => {
+  try {
+    const { full_name, contact_number, username } = req.body;
+    
+    await db('users')
+      .where({ id: req.user.id })
+      .update({
+        full_name,
+        contact_number,
+        username,
+        updated_at: db.fn.now()
+      });
+
+    res.status(200).json({ status: 'success', message: 'Profile updated' });
+  } catch (error) {
+    res.status(500).json({ status: 'error', message: error.message });
   }
 };

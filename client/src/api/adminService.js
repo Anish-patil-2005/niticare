@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import client from './client';
 
 export const adminService = {
@@ -16,6 +15,12 @@ export const adminService = {
 
   addAshaWorker: async (data) => {
     return await client.post('/admin/ashas', data);
+  },
+
+  bulkAddAsha: async (formData) => {
+    return await client.post('/admin/bulk-asha', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
   },
 
   deleteAshaWorker: async (id) => {

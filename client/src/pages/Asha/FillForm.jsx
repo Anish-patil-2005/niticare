@@ -86,7 +86,7 @@ const FillForm = () => {
     setSaving(true);
 
     // 1. Get phase and recordId from URL
-    const recordId = searchParams.get('recordId');
+    // const recordId = searchParams.get('recordId');
     const phase = searchParams.get('phase');
 
     try {
@@ -97,13 +97,13 @@ const FillForm = () => {
         data: formData,
         // 2. CRITICAL: Include these so the backend handles logic correctly
         phase: phase, 
-        recordId: recordId || null 
+        // recordId: recordId || null 
       };
 
-      console.log("🚀 Submitting Payload:", payload); // Check this in your browser console
+      
 
       await recordService.saveANCRecord(payload);
-      toast.success(recordId ? "Entry Updated" : "New Entry Created");
+      toast.success("Form Submitted");
       navigate(-1);
     } catch (err) {
       console.error("Save error:", err);

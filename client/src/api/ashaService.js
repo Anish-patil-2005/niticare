@@ -31,5 +31,12 @@ updateBeneficiary: (id, data) => {
   return res.data;
 },
 
+getDashboardStats: async () => {
+    return await client.get('/asha/stats'); // Update with your actual route
+  },
+
+  getTodayPriorityTasks: async () => {
+  return await client.get('/asha/tasks/today');
+},
 
 };

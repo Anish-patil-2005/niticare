@@ -6,7 +6,7 @@ import { protect } from '../middleware/authMiddleware.js';
 
 const router  = express.Router();
 
-router.post('/', createOrUpdateSchedule);
+router.post('/',  createOrUpdateSchedule);
 router.get('/beneficiary/:id', getSchedulesByBeneficiary);
 
 export default router;

@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { 
   CloudUpload, FileSpreadsheet, CheckCircle2, 
   AlertCircle, Loader2, Database, ArrowRight, X 
@@ -6,6 +7,7 @@ import {
 import { adminService } from '../../api/adminService';
 
 const DataSync = () => {
+  const { t } = useTranslation();
   const [file, setFile] = useState(null);
   const [status, setStatus] = useState('idle'); // idle, uploading, success, error
   const [message, setMessage] = useState('');
@@ -36,14 +38,14 @@ const handleSync = async () => {
     // Match exactly what you saw in the console log
     if (result.status === 'success' || result.message) {
       setStatus('success');
-      setMessage(result.message || "Sync completed successfully");
+      setMessage(result.message || t('sync.success_msg'));
       setFile(null);
     }
   } catch (err) {
     console.error("UI Update Error:", err);
     setStatus('error');
     // If result was undefined, this shows "Cannot read properties of undefined"
-    setMessage(err.message || "UI failed to process server response");
+    setMessage(err.message || t('sync.error_msg'));
   }
 };
   return (
@@ -51,8 +53,8 @@ const handleSync = async () => {
       {/* Header */}
       <div className="flex justify-between items-start">
         <div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight">Data Synchronization</h1>
-          <p className="text-slate-500 mt-1 font-medium">Import large-scale beneficiary records from government CSV/Excel files.</p>
+          <h1 className="text-3xl font-black text-slate-900 tracking-tight">{t('sync.title')}</h1>
+          <p className="text-slate-500 mt-1 font-medium">{t('sync.subtitle')}</p>
         </div>
         <div className="p-3 bg-primary/10 text-primary rounded-2xl shadow-sm">
           <Database size={24} />
@@ -83,7 +85,7 @@ const handleSync = async () => {
             {file ? (
               <div className="space-y-2">
                 <p className="text-lg font-black text-slate-800 tracking-tight">{file.name}</p>
-                <p className="text-xs text-primary font-bold uppercase tracking-widest">{(file.size / 1024 / 1024).toFixed(2)} MB • Ready to Parse</p>
+                <p className="text-xs text-primary font-bold uppercase tracking-widest">{(file.size / 1024 / 1024).toFixed(2)} MB • {t('sync.ready')}</p>
                 <button 
                   onClick={(e) => { e.stopPropagation(); setFile(null); }}
                   className="mt-4 text-red-500 hover:text-red-600 p-2 rounded-full hover:bg-red-50 transition-colors"
@@ -93,8 +95,8 @@ const handleSync = async () => {
               </div>
             ) : (
               <div className="space-y-2">
-                <p className="text-lg font-bold text-slate-700">Drag & Drop or click to browse</p>
-                <p className="text-sm text-slate-400 font-medium">Supports CSV, XLS, XLSX (Max 5MB)</p>
+                <p className="text-lg font-bold text-slate-700">{t('sync.drag_drop')}</p>
+                <p className="text-sm text-slate-400 font-medium">{t('sync.supports')}</p>
               </div>
             )}
           </div>
@@ -105,7 +107,7 @@ const handleSync = async () => {
               onClick={handleSync}
               className="btn-primary-niti py-5 text-lg font-black shadow-xl shadow-emerald-500/20 animate-in zoom-in-95"
             >
-              Initialize Sync Sequence <ArrowRight className="ml-2" size={20} />
+              {t('sync.init_button')} <ArrowRight className="ml-2" size={20} />
             </button>
           )}
 
@@ -114,7 +116,7 @@ const handleSync = async () => {
             <div className="bg-emerald-50 border border-emerald-100 p-6 rounded-[28px] flex items-start gap-4 animate-in slide-in-from-top-2">
               <div className="p-2 bg-emerald-500 text-white rounded-full shadow-sm"><CheckCircle2 size={20} /></div>
               <div>
-                <p className="text-emerald-900 font-black tracking-tight">Synchronization Successful</p>
+                <p className="text-emerald-900 font-black tracking-tight">{t('sync.success_title')}</p>
                 <p className="text-emerald-700 text-sm mt-0.5 font-medium">{message}</p>
               </div>
             </div>
@@ -124,7 +126,7 @@ const handleSync = async () => {
             <div className="bg-red-50 border border-red-100 p-6 rounded-[28px] flex items-start gap-4 animate-in slide-in-from-top-2">
               <div className="p-2 bg-red-500 text-white rounded-full shadow-sm"><AlertCircle size={20} /></div>
               <div>
-                <p className="text-red-900 font-black tracking-tight">Sync Engine Failure</p>
+                <p className="text-red-900 font-black tracking-tight">{t('sync.error_title')}</p>
                 <p className="text-red-700 text-sm mt-0.5 font-medium">{message}</p>
               </div>
             </div>
@@ -135,14 +137,14 @@ const handleSync = async () => {
         <div className="space-y-6">
           <div className="bg-slate-900 rounded-[32px] p-8 text-white">
             <h3 className="text-sm font-black uppercase tracking-widest text-slate-400 mb-6 flex items-center gap-2">
-              <FileSpreadsheet size={16} /> Data Requirements
+              <FileSpreadsheet size={16} /> {t('sync.req_title')}
             </h3>
             <ul className="space-y-4">
               {[
-                { label: 'Beneficiary ID', desc: 'Must be unique (UIDAI/Govt ID)' },
-                { label: 'Village Name', desc: 'Required for ASHA allocation' },
-                { label: 'Medical Risk', desc: 'Score between 0-10 or High/Low' },
-                { label: 'Contact', desc: 'Primary mobile number' }
+                { label: t('sync.label_id'), desc: t('sync.desc_id') },
+                { label: t('sync.label_village'), desc: t('sync.desc_village') },
+                { label: t('sync.label_risk'), desc: t('sync.desc_risk') },
+                { label: t('sync.label_contact'), desc: t('sync.desc_contact') }
               ].map((item, i) => (
                 <li key={i} className="flex gap-3">
                   <div className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-[10px] font-bold mt-0.5">
@@ -158,9 +160,9 @@ const handleSync = async () => {
           </div>
 
           <div className="bg-white border border-slate-100 rounded-[32px] p-8">
-            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-4">Sync Integrity</h3>
+            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-4">{t('sync.integrity_title')}</h3>
             <p className="text-xs text-slate-500 font-medium leading-relaxed">
-              The engine performs an <strong>Upsert</strong> operation. Duplicate IDs will automatically update existing records without creating clones.
+              {t('sync.integrity_desc')}
             </p>
           </div>
         </div>

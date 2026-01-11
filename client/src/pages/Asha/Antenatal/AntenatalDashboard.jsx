@@ -1,6 +1,7 @@
 /* eslint-disable no-unused-vars */
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next'; // Added hook
 import { formService } from '../../../api/formService.js';
 import { scheduleService } from '../../../api/scheduleService.js';
 import { 
@@ -11,10 +12,11 @@ import {
 import toast from 'react-hot-toast';
 
 export const AntenatalDashboard = () => {
+  const { t } = useTranslation(); // Initialize translation
   const { id: beneficiaryId } = useParams(); 
   const [loading, setLoading] = useState(true);
   const [forms, setForms] = useState([]);
-  const [schedules, setSchedules] = useState([]); // Store planned visits
+  const [schedules, setSchedules] = useState([]); 
   const [schedulingId, setSchedulingId] = useState(null); 
   const [selectedDate, setSelectedDate] = useState('');
 
@@ -30,7 +32,6 @@ export const AntenatalDashboard = () => {
   const loadData = async () => {
     try {
       setLoading(true);
-      // Fetch forms and schedules in parallel
       const [fRes, sRes] = await Promise.all([
         formService.getDashboardForms('antenatal', beneficiaryId),
         scheduleService.getSchedulesByBeneficiary(beneficiaryId)
@@ -42,22 +43,22 @@ export const AntenatalDashboard = () => {
       setForms(Array.isArray(fetchedForms) ? fetchedForms : []);
       setSchedules(Array.isArray(fetchedSchedules) ? fetchedSchedules : []);
     } catch (err) {
-      toast.error("Failed to load timeline data");
+      toast.error(t('errors.recordNotFound'));
     } finally {
       setLoading(false);
     }
   };
 
   const handleScheduleSave = async (formId) => {
-    if (!selectedDate) return toast.error("Select a date");
+    if (!selectedDate) return toast.error(t('form_builder.err_no_title')); 
     try {
       await scheduleService.planVisit(beneficiaryId, formId, selectedDate);
-      toast.success("Visit Scheduled");
+      toast.success(t('success.updated'));
       setSchedulingId(null);
       setSelectedDate('');
-      loadData(); // Re-fetch to show the new date badge
+      loadData(); 
     } catch (err) {
-      toast.error("Failed to schedule");
+      toast.error(t('errors.submitFailed'));
     }
   };
 
@@ -82,7 +83,6 @@ export const AntenatalDashboard = () => {
 
   const monthSlots = [1, 2, 3, 4, 5, 6, 7, 8, 9];
   
-  // Progress Calculations
   let totalTasks = 0;
   let completedTasks = 0;
   monthSlots.forEach(m => {
@@ -95,7 +95,7 @@ export const AntenatalDashboard = () => {
   if (loading) return (
     <div className="py-20 flex flex-col items-center justify-center bg-white">
       <Activity className="animate-spin text-emerald-600 mb-2" size={32} />
-      <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Loading Timeline...</p>
+      <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">{t('antenatal.loading')}</p>
     </div>
   );
 
@@ -107,7 +107,7 @@ export const AntenatalDashboard = () => {
         <div className="bg-emerald-600 rounded-[2.5rem] p-8 text-white shadow-xl shadow-emerald-100 relative overflow-hidden">
           <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div className="flex-1">
-              <p className="text-emerald-100 text-[10px] font-black uppercase tracking-[0.2em] mb-1">Pregnancy Progress</p>
+              <p className="text-emerald-100 text-[10px] font-black uppercase tracking-[0.2em] mb-1">{t('antenatal.progress_title')}</p>
               <h2 className="text-4xl font-black mb-4">{overallPercentage}%</h2>
               <div className="w-full bg-emerald-700/50 h-3 rounded-full mb-3">
                 <div 
@@ -116,7 +116,7 @@ export const AntenatalDashboard = () => {
                 />
               </div>
               <p className="text-xs font-bold text-emerald-50 opacity-80 uppercase tracking-wider">
-                {completedTasks} of {totalTasks} Month-wise Tasks Finished
+                {t('antenatal.tasks_finished', { completed: completedTasks, total: totalTasks })}
               </p>
             </div>
             <LayoutDashboard className="hidden md:block opacity-20" size={100} />
@@ -138,20 +138,19 @@ export const AntenatalDashboard = () => {
                     {isMonthFullyDone ? <CheckCircle2 size={20} /> : m}
                   </div>
                   <div>
-                    <h3 className="font-black text-slate-800 text-md uppercase tracking-tight">Month {m}</h3>
+                    <h3 className="font-black text-slate-800 text-md uppercase tracking-tight">{t('antenatal.month_label')} {m}</h3>
                     <span className={`text-[9px] font-black px-2 py-0.5 rounded-full ${isMonthFullyDone ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
-                      {completedCount}/{monthlyForms.length} COMPLETED
+                      {completedCount}/{monthlyForms.length} {t('antenatal.completed_stat')}
                     </span>
                   </div>
                 </div>
 
                 {/* Forms List */}
-                <div className="p-4 flex-1 space-y-3">
+                <div className="p-4 flex-1_space-y-3">
                   {monthlyForms.map((form) => {
                     const isDone = isFormDoneInMonth(form, m);
                     const isPlanning = schedulingId === `${m}-${form.id}`;
                     
-                    // Match schedule from state
                     const activeSched = schedules.find(s => s.form_id === form.id && s.status === 'planned');
                     const displayDate = activeSched?.scheduled_date;
                     const isMissed = !isDone && displayDate && new Date(displayDate) < new Date().setHours(0,0,0,0);
@@ -174,11 +173,10 @@ export const AntenatalDashboard = () => {
                                  <span className={`text-[11px] font-bold uppercase truncate tracking-tighter ${isDone ? 'text-emerald-900' : 'text-slate-700'}`}>
                                    {form.title}
                                  </span>
-                                 {/* DATE BADGE */}
                                  {!isDone && displayDate && (
                                    <span className={`text-[9px] font-black flex items-center gap-1 mt-0.5 ${isMissed ? 'text-rose-600 animate-pulse' : 'text-indigo-600'}`}>
                                      <Calendar size={10} />
-                                     {isMissed ? 'MISSED: ' : 'PLAN: '}{new Date(displayDate).toLocaleDateString('en-IN')}
+                                     {isMissed ? `${t('antenatal.missed')}: ` : `${t('antenatal.plan')}: `}{new Date(displayDate).toLocaleDateString('en-IN')}
                                    </span>
                                  )}
                                </div>
@@ -196,10 +194,9 @@ export const AntenatalDashboard = () => {
                           )}
                         </div>
 
-                        {/* Inline Scheduler */}
                         {isPlanning && (
                           <div className="flex flex-col gap-2 p-3 bg-indigo-50 rounded-xl animate-in fade-in zoom-in duration-200">
-                            <label className="text-[9px] font-black text-indigo-400 uppercase ml-1">Select Visit Date</label>
+                            <label className="text-[9px] font-black text-indigo-400 uppercase ml-1">{t('antenatal.select_date')}</label>
                             <input 
                               type="date" 
                               min={todayStr}
@@ -211,7 +208,7 @@ export const AntenatalDashboard = () => {
                                 onClick={() => handleScheduleSave(form.id)}
                                 className="flex-1 bg-indigo-600 text-white py-2 rounded-lg text-[10px] font-black uppercase flex items-center justify-center gap-2"
                               >
-                                <Save size={12} /> Save
+                                <Save size={12} /> {t('common.save')}
                               </button>
                               <button 
                                 onClick={() => setSchedulingId(null)}
