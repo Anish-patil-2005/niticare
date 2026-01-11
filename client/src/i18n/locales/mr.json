@@ -91,7 +91,9 @@
     "reg_source": "नोंदणी स्त्रोत",
     "cancel": "रद्द करा",
     "save": "बदल जतन करा",
-    "save_assessment": "मूल्यांकन जतन करा"
+    "save_assessment": "मूल्यांकन जतन करा",
+    "contact_number": "संपर्क नंबर",
+    "assigned_asha": "नेमलेली आशा"
   },
   "medical": {
     "bloodGroup": "रक्त गट",
@@ -296,5 +298,9 @@
     "success_register": "खाते यशस्वीरित्या तयार झाले!",
     "error_invalid": "चुकीचे युजरनेम किंवा पासवर्ड.",
     "error_register_fail": "नोंदणी अयशस्वी. कृपया आपले तपशील तपासा."
+  },
+   "registration": {
+    "updateTitle": "नोंद अद्ययावत करा",
+    "registerTitle": "लाभार्थी नोंदणी"
   }
 }

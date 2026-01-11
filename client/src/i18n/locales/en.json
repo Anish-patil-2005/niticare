@@ -13,7 +13,8 @@
     "syncing": "Syncing Profile...",
     "maternalModule": "Maternal Health Module",
     "yes" : "Yes",
-    "no":"No"
+    "no":"No",
+    "confirm_delete": ""
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -93,7 +94,9 @@
     "reg_source": "Registration Source",
     "cancel": "CANCEL",
     "save": "SAVE CHANGES",
-    "save_assessment": "SAVE ASSESSMENT"
+    "contact_number": "Contact Number",
+    "save_assessment": "SAVE ASSESSMENT",
+    "assigned_asha" :"Assined Asha"
   },
   "registration": {
     "updateTitle": "Update Record",

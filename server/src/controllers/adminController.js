@@ -85,8 +85,7 @@ export const getAllBeneficiaries = async (req, res) => {
 
 //Feature 4 
 import { Parser } from 'json2csv';
-
-export const exportBeneficiariesCSV = async (req, res) => {
+/*export const exportBeneficiariesCSV = async (req, res) => {
   try {
     const { village } = req.query;
 
@@ -94,37 +93,125 @@ export const exportBeneficiariesCSV = async (req, res) => {
       .leftJoin('users as u', 'b.assigned_asha_id', 'u.id');
 
     if (village && village !== 'all') {
-      query = query.where('b.village', village);
+      query.where('b.village', village);
     }
 
-    const rawData = await query.select({
-      'Government ID': 'b.govt_id',
-      'Name': 'b.name',
-      'Age': 'b.age',
-      'Contact': 'b.contact_number',
-      'EDD': 'b.edd',
-      'Village': 'b.village',
-      'Assigned ASHA': 'u.full_name',
-      'Data Complete': 'b.is_data_complete'
-    });
+    const beneficiaries = await query.select([
+      'b.govt_id',
+      'b.name',
+      'b.age',
+      'b.contact_number',
+      'b.edd',
+      'b.village',
+      'b.is_data_complete',
+      'u.full_name as asha_name'
+    ]);
 
-    if (!rawData || rawData.length === 0) {
-      return res.status(404).json({ message: "No data found for the selected filters" });
+    if (!beneficiaries.length) {
+      return res.status(404).json({ message: "No data available to export" });
     }
 
-    const json2csvParser = new Parser();
-    const csv = json2csvParser.parse(rawData);
+    const csvData = beneficiaries.map(row => ({
+      'Government ID': row.govt_id || 'N/A',
+      'Name': row.name || 'Unknown',
+      'Age': row.age ?? '',
+      'Contact': row.contact_number || '',
+      'EDD': row.edd ? new Date(row.edd).toISOString().split('T')[0] : '',
+      'Village': row.village || '',
+      'Assigned ASHA': row.asha_name || 'Unassigned',
+      'Status': row.is_data_complete ? 'Complete' : 'Incomplete'
+    }));
 
-    // Set headers clearly
-    res.header('Content-Type', 'text/csv');
+    const parser = new Parser();
+    const csv = parser.parse(csvData);
+
+    // ✅ Add BOM for Excel
+    const csvWithBom = `\uFEFF${csv}`;
+
+    res.header('Content-Type', 'text/csv; charset=utf-8');
     res.attachment(`Beneficiary_Report_${Date.now()}.csv`);
-    return res.send(csv);
+    
+    // Optional: Expose headers for Axios if you use custom filenames on the frontend
+    res.header('Access-Control-Expose-Headers', 'Content-Disposition');
+
+    return res.send(csvWithBom);
 
   } catch (error) {
     console.error("CSV Export Error:", error);
-    res.status(500).json({ status: 'error', message: "Failed to generate CSV" });
+    res.status(500).json({ error: "Failed to generate CSV" });
+  }
+};*/
+
+export const exportBeneficiariesCSV = async (req, res) => {
+  try {
+    const {
+      village = 'all',
+      is_high_risk,
+      is_data_complete
+    } = req.query;
+
+    const query = db('beneficiaries as b')
+      .leftJoin('users as u', 'b.assigned_asha_id', 'u.id');
+
+    /* ---------------- Village Filter ---------------- */
+    if (village !== 'all') {
+      query.where('b.village', village);
+    }
+
+    /* ---------------- High Risk Filter ---------------- */
+    if (is_high_risk !== undefined) {
+      query.where('b.is_high_risk', is_high_risk === 'true');
+    }
+
+    /* ---------------- Status Filter ---------------- */
+    if (is_data_complete !== undefined) {
+      query.where('b.is_data_complete', is_data_complete === 'true');
+    }
+
+    const beneficiaries = await query.select([
+      'b.govt_id',
+      'b.name',
+      'b.age',
+      'b.contact_number',
+      'b.edd',
+      'b.village',
+      'b.is_high_risk',
+      'b.is_data_complete',
+      'u.full_name as asha_name'
+    ]);
+
+    /* ---------------- CSV Mapping ---------------- */
+    const csvData = beneficiaries.map(row => ({
+      'Government ID': row.govt_id || 'N/A',
+      'Name': row.name || 'Unknown',
+      'Age': row.age ?? '',
+      'Contact': row.contact_number || '',
+      'EDD': row.edd
+        ? new Date(row.edd).toISOString().split('T')[0]
+        : '',
+      'Village': row.village || '',
+      'High Risk': row.is_high_risk ? 'Yes' : 'No',
+      'Status': row.is_data_complete ? 'Complete' : 'Pending',
+      'Assigned ASHA': row.asha_name || 'Unassigned'
+    }));
+
+    const parser = new Parser();
+    const csv = '\uFEFF' + parser.parse(csvData);
+
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader(
+      'Content-Disposition',
+      'attachment; filename="Beneficiary_Report.csv"'
+    );
+    res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
+
+    return res.status(200).send(csv);
+  } catch (error) {
+    console.error("CSV Export Error:", error);
+    res.status(500).json({ error: "Failed to export CSV" });
   }
 };
+
 
 // Feature 5 
 // A. Manual Allocation (Specific IDs)

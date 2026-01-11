@@ -10,7 +10,8 @@ import {
   X, 
   User,
   Settings,
-  HeartPulse
+  HeartPulse,
+  ArrowUpRight
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { LanguageSelector } from '../LanguageSelector'; // Import your component
@@ -28,6 +29,8 @@ const AshaLayout = () => {
     { name: t('nav.dashboard'), path: '/asha/dashboard', icon: <LayoutDashboard size={20} /> },
     { name: t('nav.my_beneficiaries'), path: '/asha/beneficiaries', icon: <User size={20} /> },
     { name: t('nav.register'), path: '/asha/register', icon: <UserPlus size={20} /> },
+    { name: t('nav.reports_export'),path: '/asha/export', icon: <ArrowUpRight size={20}/>},
+
   ];
 
   const handleLogout = () => {

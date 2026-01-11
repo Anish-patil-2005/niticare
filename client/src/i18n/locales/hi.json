@@ -83,6 +83,8 @@
     "govt_id": "सरकारी आईडी",
     "state": "राज्य",
     "district": "जिला",
+    "contact_number": "संपर्क नंबर",
+
     "block": "ब्लॉक",
     "village": "गांव",
     "contact": "संपर्क",
@@ -91,6 +93,7 @@
     "reg_source": "पंजीकरण स्रोत",
     "cancel": "रद्द करें",
     "save": "परिवर्तन सहेजें",
+    "assigned_asha": "नियुक्त आशा",
     "save_assessment": "मूल्यांकन सहेजें"
   },
   "medical": {
@@ -291,6 +294,10 @@
     "login_btn": "साइन इन",
     "portal_subtitle": "प्रोफेशनल पोर्टल",
     "password": "पासवर्ड"
+  },
+  "registration": {
+    "updateTitle": "रिकॉर्ड अपडेट करें",
+    "registerTitle": "लाभार्थी पंजीकरण"
   }
 
 }

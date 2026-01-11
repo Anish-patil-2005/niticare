@@ -1,7 +1,6 @@
 import express from 'express';
 import * as ashaController from '../controllers/ashaController.js';
 import { protect, restrictTo } from '../middleware/authMiddleware.js';
-import upload from '../config/multer.js'; // The multer config we built earlier
 
 const router = express.Router();
 

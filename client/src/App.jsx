@@ -17,7 +17,7 @@ import { AntenatalDashboard } from "./pages/Asha/Antenatal/AntenatalDashboard.js
 import FillForm from "./pages/Asha/FillForm.jsx";
 import AshaDashboard from "./pages/Asha/AshaDashboard.jsx";
 import Profile from "./pages/Common/Profile.jsx";
-
+import { ReportExport } from "./pages/Common/ReportExport.jsx";
 // Temporary Components for testing
 const Unauthorized = () => (
   <h1 className="text-2xl text-destructive">Access Denied</h1>
@@ -67,7 +67,7 @@ function App() {
 
           <Route path="assignments" element={<TaskAllocation />} />
           <Route path="/admin/forms" element={<FormBuilder />} />
-          <Route path="/admin/export" element={<ComingSoon />} />
+          <Route path="/admin/export" element={<ReportExport mode="admin" />} />
 
           <Route path="fill-form/:formId/:beneficiaryId" element={<FillForm />} />
 
@@ -97,6 +97,7 @@ function App() {
           <Route path="edit/:id" element={<RegisterBeneficiary />} />
           <Route path="fill-form/:formId/:beneficiaryId" element={<FillForm />} />
 
+          <Route path="/asha/export" element={<ReportExport mode="asha" />} />
 
           <Route path="profile" element={<Profile />} />
 

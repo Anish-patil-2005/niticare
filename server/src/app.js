@@ -49,6 +49,10 @@ app.use('/api/v1/records', recordRoutes);
 import schedulesRoutes from './routes/schedulesRoutes.js'
 app.use('/api/v1/schedules', schedulesRoutes);
 
+import reportexportRoutes from './routes/reportexportRoutes.js'
+app.use('/api/v1/reports', reportexportRoutes);
+
+
 // --- Global Error Handler ---
 // This prevents the server from crashing and hides stack traces in production
 app.use((err, req, res, next) => {

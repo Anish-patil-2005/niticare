@@ -65,15 +65,33 @@ export const adminService = {
   },
 
   // --- FEATURE: REPORTING & EXPORT ---
-  exportCSV: (village) => {
-    return client.get(`/admin/export-csv`, {
-      params: { village: village === 'all' ? undefined : village },
-      responseType: 'blob', 
-      headers: {
-        'Accept': 'text/csv'
-      }
-    });
-  },
+// exportCSV: (village) => {
+//   const token = localStorage.getItem('token'); 
+//   return client.get(`/admin/export-csv`, {
+//     params: { village: village === 'all' ? undefined : village },
+//     responseType: 'blob', // Critical for binary/file data
+//     headers: {
+//       'Authorization': `Bearer ${token}`
+//     }
+//   });
+// },
+
+exportCSV: ({ village, is_high_risk, is_data_complete }) => {
+  const token = localStorage.getItem('token');
+
+  return client.get('/admin/export-csv', {
+    params: {
+      village,
+      is_high_risk,
+      is_data_complete
+    },
+    responseType: 'blob',
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+},
+
 
   // --- FEATURE: DYNAMIC FORM BUILDER ---
   
