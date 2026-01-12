@@ -333,6 +333,35 @@
     "success_register": "Account created successfully!",
     "error_invalid": "Invalid username or password.",
     "error_register_fail": "Registration failed. Please check your details."
-  }
+  },
+  "reports": {
+      "title": "Data Exports",
+      "ashaDesc": "Download reports for your assigned beneficiaries.",
+      "adminDesc": "Generate system-wide administrative health reports.",
+      "ashaPortal": "ASHA Portal",
+      "adminConsole": "Admin Console",
+      "beneficiaryTitle": "My Beneficiaries Report",
+      "masterTitle": "Master Directory Export",
+      "filterSubtitle": "Customize your data export using the filters below.",
+      "geoLabel": "Geographic Filter",
+      "allAshaVillages": "All My Villages",
+      "allAdminVillages": "All System Villages",
+      "priorityLabel": "Priority Tags",
+      "highRisk": "High Risk",
+      "unassigned": "Unassigned",
+      "incomplete": "Incomplete",
+      "exportBtn": "Export Excel",
+      "analyticsTitle": "ASHA Analytics Report",
+      "analyticsDesc": "Deep-dive into performance metrics and worker allocations.",
+      "downloadBtn": "Download Performance Data",
+      "footer": "End-to-End Encrypted Health Export",
+      "notifications": {
+        "villageError": "Failed to load villages",
+        "exportSuccess": "Beneficiary report downloaded successfully",
+        "exportError": "Failed to download report",
+        "ashaSuccess": "ASHA report downloaded successfully",
+        "ashaError": "Failed to download ASHA report"
+      }
+    }
 
 }
