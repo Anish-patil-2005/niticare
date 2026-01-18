@@ -29,7 +29,8 @@
     "staff": "Field Staff",
     "niticare": "NitiCare",
     "asha_companion": "Asha Companion",
-    "admin_suite": "Admin Suite"
+    "admin_suite": "Admin Suite",
+    "asha_payment":"Asha Payment Module"
   },
   "dashboard": {
     "overview": "Field Overview",

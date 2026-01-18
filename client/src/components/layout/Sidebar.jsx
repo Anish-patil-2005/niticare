@@ -1,21 +1,12 @@
-/* eslint-disable no-undef */
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { 
-  LayoutDashboard, 
-  UserRoundCog, 
-  FileText, 
-  Database, 
-  HeartPulse, 
-  ArrowUpRight,
-  ClipboardCheck,
-  Users,
-  Settings,
-  LogOut
+  LayoutDashboard, UserRoundCog, FileText, Database, HeartPulse, 
+  ArrowUpRight, ClipboardCheck, Users, Settings, LogOut, IndianRupee, X
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-const Sidebar = () => {
+const Sidebar = ({ onClose }) => {
   const navigate = useNavigate();
   const { t } = useTranslation();
 
@@ -26,6 +17,7 @@ const Sidebar = () => {
     { path: '/admin/sync-data', icon: Database, label: t('nav.data_sync') },
     { path: '/admin/assignments', icon: ClipboardCheck, label: t('nav.task_allocation') },
     { path: '/admin/forms', icon: FileText, label: t('nav.form_builder') },
+    { path: '/admin/asha-payment', icon: IndianRupee, label: t('nav.asha_payment') },
     { path: '/admin/export', icon: ArrowUpRight, label: t('nav.reports_export') },
   ];
 
@@ -37,16 +29,23 @@ const Sidebar = () => {
   };
 
   return (
-    <aside className="w-72 bg-white h-screen flex flex-col border-r border-slate-100 shadow-sm z-50">
+    <aside className="w-72 bg-white h-screen flex flex-col border-r border-slate-100 shadow-xl lg:shadow-sm">
       {/* Branding Section */}
-      <div className="p-8 pb-6 flex items-center gap-3">
-        <div className="bg-primary shadow-lg shadow-primary/20 p-2 rounded-xl">
-          <HeartPulse className="text-white" size={24} strokeWidth={2.5} />
+      <div className="p-8 pb-6 flex items-center justify-between lg:justify-start gap-3">
+        <div className="flex items-center gap-3">
+          <div className="bg-primary shadow-lg shadow-primary/20 p-2 rounded-xl">
+            <HeartPulse className="text-white" size={24} strokeWidth={2.5} />
+          </div>
+          <div>
+            <span className="text-xl font-black text-slate-800 tracking-tight block leading-none">{t('nav.niticare')}</span>
+            <span className="text-[10px] font-bold text-primary uppercase tracking-[0.2em]">{t('nav.admin_suite')}</span>
+          </div>
         </div>
-        <div>
-          <span className="text-xl font-black text-slate-800 tracking-tight block leading-none">{t('nav.niticare')}</span>
-          <span className="text-[10px] font-bold text-primary uppercase tracking-[0.2em]">{t('nav.admin_suite')}</span>
-        </div>
+        
+        {/* Close button inside sidebar for mobile only */}
+        <button onClick={onClose} className="lg:hidden p-2 text-slate-400 hover:text-slate-600">
+          <X size={20} />
+        </button>
       </div>
 
       {/* Navigation Links */}
@@ -59,6 +58,7 @@ const Sidebar = () => {
           <NavLink
             key={item.path}
             to={item.path}
+            onClick={onClose} // Closes sidebar on mobile after clicking link
             className={({ isActive }) => `
               flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all duration-300 group
               ${isActive 
@@ -84,16 +84,16 @@ const Sidebar = () => {
       {/* Profile Section */}
       <div className="p-6 mt-auto border-t border-slate-50">
         <div className="bg-slate-50 rounded-2xl p-4 flex items-center gap-3 border border-slate-100">
-          <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white font-bold text-sm">AD</div>
+          <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white font-bold text-sm shrink-0">AD</div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-bold text-slate-800 truncate">Administrator</p>
             <p className="text-[10px] text-slate-500 truncate uppercase tracking-tighter font-bold">Health Dept</p>
           </div>
-          <div className="flex gap-1">
-            <button onClick={() => navigate('/admin/profile')} className="text-slate-400 hover:text-primary p-1" title={t('common.edit')}>
+          <div className="flex gap-1 shrink-0">
+            <button onClick={() => { navigate('/admin/profile'); onClose(); }} className="text-slate-400 hover:text-primary p-1">
               <Settings size={18} />
             </button>
-            <button onClick={handleLogout} className="text-slate-400 hover:text-rose-500 p-1" title={t('common.logout')}>
+            <button onClick={handleLogout} className="text-slate-400 hover:text-rose-500 p-1">
               <LogOut size={18} />
             </button>
           </div>

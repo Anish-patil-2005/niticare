@@ -72,6 +72,8 @@ function App() {
           <Route path="fill-form/:formId/:beneficiaryId" element={<FillForm />} />
 
           <Route path="profile" element={<Profile />} />
+          <Route path="asha-payment" element={<ComingSoon />} />
+          
 
 
         </Route>

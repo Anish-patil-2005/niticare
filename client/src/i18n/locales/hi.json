@@ -25,7 +25,8 @@
     "staff": "क्षेत्र कर्मचारी",
     "niticare": "नीतिकेयर",
     "asha_companion": "आशा साथी",
-    "admin_suite": "एडमिन सुइट"
+    "admin_suite": "एडमिन सुइट",
+    "asha_payment":"आशा कार्यकर्ताओं का भुगतान "
   },
   "dashboard": {
     "overview": "क्षेत्र अवलोकन",
