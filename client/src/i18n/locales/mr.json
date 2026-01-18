@@ -10,7 +10,9 @@
     "system_live": "सिस्टम लाइव्ह",
     "status": "स्थिती",
     "all": "सर्व",
-    "maternalModule": "माता आरोग्य विभाग"
+    "maternalModule": "माता आरोग्य विभाग",
+    "tracking_subtitle": "भेटी, कामे आणि आरोग्य सेवांचा मागोवा एका ठिकाणी घ्या"
+
   },
   "nav": {
     "dashboard": "डॅशबोर्ड",

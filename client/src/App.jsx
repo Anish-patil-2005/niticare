@@ -18,6 +18,8 @@ import FillForm from "./pages/Asha/FillForm.jsx";
 import AshaDashboard from "./pages/Asha/AshaDashboard.jsx";
 import Profile from "./pages/Common/Profile.jsx";
 import { ReportExport } from "./pages/Common/ReportExport.jsx";
+import { AshaLogsPage } from "./pages/Common/AshaLogPage.jsx";
+
 // Temporary Components for testing
 const Unauthorized = () => (
   <h1 className="text-2xl text-destructive">Access Denied</h1>
@@ -73,6 +75,9 @@ function App() {
 
           <Route path="profile" element={<Profile />} />
           <Route path="asha-payment" element={<ComingSoon />} />
+
+          <Route path="ashalog" element={<AshaLogsPage />} />
+          <Route path="ashalog/:id" element={<AshaLogsPage />} />
           
 
 
@@ -102,6 +107,8 @@ function App() {
           <Route path="/asha/export" element={<ReportExport mode="asha" />} />
 
           <Route path="profile" element={<Profile />} />
+
+          <Route path="ashalog" element={<AshaLogsPage />} />
 
 
         </Route>

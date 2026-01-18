@@ -14,7 +14,8 @@
     "maternalModule": "Maternal Health Module",
     "yes" : "Yes",
     "no":"No",
-    "confirm_delete": ""
+    "tracking_subtitle": "Track visits, tasks, and care activities in one place",
+    "confirm_delete": "Confirm Delete"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -30,7 +31,8 @@
     "niticare": "NitiCare",
     "asha_companion": "Asha Companion",
     "admin_suite": "Admin Suite",
-    "asha_payment":"Asha Payment Module"
+    "asha_payment":"Asha Payment Module",
+    "activity_logs": "Activity Logs"
   },
   "dashboard": {
     "overview": "Field Overview",

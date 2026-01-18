@@ -2,7 +2,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { 
   LayoutDashboard, UserRoundCog, FileText, Database, HeartPulse, 
-  ArrowUpRight, ClipboardCheck, Users, Settings, LogOut, IndianRupee, X
+  ArrowUpRight, ClipboardCheck, Users, Settings, LogOut, IndianRupee, X,History
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -19,6 +19,7 @@ const Sidebar = ({ onClose }) => {
     { path: '/admin/forms', icon: FileText, label: t('nav.form_builder') },
     { path: '/admin/asha-payment', icon: IndianRupee, label: t('nav.asha_payment') },
     { path: '/admin/export', icon: ArrowUpRight, label: t('nav.reports_export') },
+    { path: '/admin/ashalog', icon: History, label: t('nav.activity_logs') }, // Changed icon and label
   ];
 
   const handleLogout = () => {
