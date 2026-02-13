@@ -15,27 +15,15 @@ const app = express();
 // Enable CORS for your Next.js frontend
 // --- Global Middleware ---
 
-const allowedOrigins = [
-  'http://localhost:5173',                  // Local Development
-  'https://niticare.vercel.app',    // Replace with Vercel URL
-];
-
 app.use(cors({
-  origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl)
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) === -1) {
-      return callback(new Error('CORS policy violation'), false);
-    }
-    return callback(null, true);
-  },
+  origin: [
+    'http://localhost:5173', 
+    'https://niticare.vercel.app' 
+  ],
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // OPTIONS is included here
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
-
-// Add this line right after CORS middleware
-app.options('*', cors());
 
 
 // Body parser: Increase limit for the upcoming Govt Data Sync (CSV/JSON)
