@@ -4,7 +4,7 @@ import { MapPin, Loader2, Download, AlertTriangle, CheckCircle2, Users, FileBarC
 import toast from 'react-hot-toast';
 import { adminService } from '../../api/adminService.js';
 import { ashaService } from '../../api/ashaService.js';
-import { reportService } from '../../api/reportexportService.js';
+import { reportService } from '../../api/reportexportservice.js';
 
 export const ReportExport = ({ mode = 'admin' }) => {
   const isAshaMode = mode === 'asha';
