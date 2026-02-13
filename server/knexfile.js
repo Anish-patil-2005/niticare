@@ -22,12 +22,20 @@ export default {
   },
 
   // ADD THIS SECTION FOR supabase
-  production: {
-    client: 'pg',
-    connection: {
-      connectionString: process.env.DATABASE_URL,
-      ssl: { rejectUnauthorized: false } // Supabase needs this!
-    },
-    migrations: { directory: './src/db/migrations' }
+production: {
+  client: 'pg',
+  connection: {
+    connectionString: process.env.DATABASE_URL,
+    // This forces the driver to accept the self-signed certificate
+    ssl: { rejectUnauthorized: false } 
+  },
+  pool: {
+    min: 2,
+    max: 10
+  },
+  migrations: {
+    directory: './src/db/migrations'
+  }
 }
+
 };
