@@ -1,7 +1,9 @@
 import knex from 'knex';
 import knexConfig from '../../knexfile.js';
 
-// Use the development configuration
-const db = knex(knexConfig.development);
+// This checks if we are on Render (production) or your PC (development)
+const environment = process.env.NODE_ENV || 'development';
+
+const db = knex(knexConfig[environment]);
 
 export default db;
