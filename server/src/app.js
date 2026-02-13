@@ -17,7 +17,7 @@ const app = express();
 
 const allowedOrigins = [
   'http://localhost:5173',                  // Local Development
-  'https://niticare-platform.vercel.app',    // Replace with your ACTUAL Vercel URL
+  'https://niticare.vercel.app',    // Replace with Vercel URL
 ];
 
 app.use(cors({
