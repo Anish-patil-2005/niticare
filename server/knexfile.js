@@ -19,5 +19,15 @@ export default {
     seeds: {
       directory: './src/db/seeds',
     },
-  }
+  },
+
+  // ADD THIS SECTION FOR supabase
+  production: {
+    client: 'pg',
+    connection: {
+      connectionString: process.env.DATABASE_URL,
+      ssl: { rejectUnauthorized: false } // Supabase needs this!
+    },
+    migrations: { directory: './src/db/migrations' }
+}
 };
