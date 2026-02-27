@@ -18,21 +18,39 @@ const Login = () => {
   const navigate = useNavigate();
 
   const onSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-    setIsLoading(true);
+  e.preventDefault();
+  setError('');
+  setIsLoading(true);
 
-    try {
-      const response = await authService.login({ username, password });
-      handleLogin({ role: response.role, full_name: response.name, username }, response.token);
-      navigate(response.role === 'admin' ? '/admin/dashboard' : '/asha/dashboard');
-    } catch (err) {
-      setError(t('auth.error_invalid'));
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  try {
+    const response = await authService.login({ username, password });
+    
+    // --- THE CRITICAL FIX START ---
+    // Since your client.js returns the full response object, 
+    // you must access the "data" property first.
+    const apiData = response.data; 
 
+    // Use apiData instead of response
+    handleLogin(
+      { 
+        role: apiData.role, 
+        full_name: apiData.name, 
+        username 
+      }, 
+      apiData.token
+    );
+
+    // Navigate using apiData.role
+    navigate(apiData.role === 'admin' ? '/admin/dashboard' : '/asha/dashboard');
+    // --- THE CRITICAL FIX END ---
+
+  } catch (err) {
+    console.error("Login component error:", err);
+    setError(t('auth.error_invalid'));
+  } finally {
+    setIsLoading(false);
+  }
+};
   return (
     /* Changed min-h-screen and py-10 for scroll safety at 100% zoom */
     <div className="min-h-screen w-full flex items-center justify-center p-6 bg-slate-50 relative overflow-y-auto py-10">

@@ -18,14 +18,18 @@ client.interceptors.request.use((config) => {
 });
 
 // Response Interceptor: Handle global errors (e.g., 401 Unauthorized)
+// client.js
 client.interceptors.response.use(
-  (response) => response, // Remove .data here to keep consistency, OR keep it if you prefer
+  (response) => response, 
   (error) => {
-    if (error.response?.status === 401) {
+    // Check if the request was specifically for login
+    const isLoginRequest = error.config?.url?.includes('/auth/login');
+
+    if (error.response?.status === 401 && !isLoginRequest) {
       localStorage.removeItem("token");
+      // Only redirect if we aren't already trying to log in
       window.location.href = "/login";
     }
-    // Return the FULL error object so components can access error.response.data
     return Promise.reject(error); 
   }
 );
