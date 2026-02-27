@@ -81,37 +81,57 @@ const FillForm = () => {
     handleInputChange(fieldName, newValues);
   };
 
- const handleSubmit = async (e) => {
-    e.preventDefault();
-    setSaving(true);
+  const handleSubmit = async (e) => {
+  e.preventDefault();
 
-    // 1. Get phase and recordId from URL
-    // const recordId = searchParams.get('recordId');
-    const phase = searchParams.get('phase');
-
-    try {
-      const payload = {
-        beneficiary_id: parseInt(beneficiaryId),
-        form_id: formId,
-        month_number: parseInt(month),
-        data: formData,
-        // 2. CRITICAL: Include these so the backend handles logic correctly
-        phase: phase, 
-        // recordId: recordId || null 
-      };
-
+  // --- MANUAL VALIDATION START ---
+  const validationErrors = [];
+  fields.forEach((field) => {
+    if (field.required) {
+      const value = formData[field.name];
       
-
-      await recordService.saveANCRecord(payload);
-      toast.success("Form Submitted");
-      navigate(-1);
-    } catch (err) {
-      console.error("Save error:", err);
-      toast.error("Failed to save record");
-    } finally {
-      setSaving(false);
+      // Check for empty strings, null, undefined, or empty arrays (for checkboxes)
+      if (
+        value === undefined || 
+        value === null || 
+        value === '' || 
+        (Array.isArray(value) && value.length === 0)
+      ) {
+        validationErrors.push(field.label);
+      }
     }
-  };
+  });
+
+  if (validationErrors.length > 0) {
+    // Show a toast with the first missing field or a summary
+    return toast.error(`Please fill mandatory fields: ${validationErrors[0]}`);
+  }
+  // --- MANUAL VALIDATION END ---
+
+  setSaving(true);
+  const phase = searchParams.get('phase');
+
+  try {
+    const payload = {
+      beneficiary_id: parseInt(beneficiaryId),
+      form_id: formId,
+      month_number: parseInt(month),
+      data: formData,
+      phase: phase,
+    };
+
+    await recordService.saveANCRecord(payload);
+    toast.success("Form Submitted");
+    navigate(-1);
+  } catch (err) {
+    console.error("Save error:", err);
+    toast.error("Failed to save record");
+  } finally {
+    setSaving(false);
+  }
+};
+
+
   if (loading) return (
     <div className="h-screen flex flex-col items-center justify-center gap-4 bg-white">
       <Loader2 className="animate-spin text-emerald-600" size={40} />

@@ -41,7 +41,7 @@
     "high_risk": "High Risk",
     "today": "Today",
     "monthly_due": "Monthly Due",
-    "priority_tasks": "Priority tasks (today)",
+    "priority_tasks": "Priority tasks (Scheduled)",
     "pending": "Pending",
     "quick_actions": "Quick Actions",
     "register_mother": "Register Mother",
@@ -282,7 +282,8 @@
     "done": "Done",
     "missed": "Missed",
     "planned": "Planned",
-    "select_date": "Select a date"
+    "select_date": "Select a date",
+    "postnatal":"POSTNATAL"
   },
   "child_care": {
     "loading": "Loading Records...",

@@ -81,25 +81,29 @@ const RegisterBeneficiary = () => {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (formData.contact_number.length !== 10) {
-      return toast.error(t('errors.invalidPhone'));
-    }
+  e.preventDefault();
+  if (formData.contact_number.length !== 10) {
+    return toast.error(t('errors.invalidPhone'));
+  }
 
-    setIsSubmitting(true);
-    try {
-      if (id) {
-        await ashaService.updateBeneficiary(id, formData);
-        toast.success(t('success.updated'));
-      } else {
-        await ashaService.registerBeneficiary(formData);
-        toast.success(t('success.registered'));
-      }
-      navigate('/asha/beneficiaries');
-    } catch (error) {
-      toast.error(error.response?.data?.message || t('errors.submitFailed'));
-    } finally { setIsSubmitting(false); }
-  };
+  setIsSubmitting(true);
+  try {
+    if (id) {
+      await ashaService.updateBeneficiary(id, formData);
+      toast.success(t('success.updated'));
+    } else {
+      await ashaService.registerBeneficiary(formData);
+      toast.success(t('success.registered'));
+    }
+    navigate('/asha/beneficiaries');
+  } catch (error) {
+  const errorMessage = error.response?.data?.message || t('errors.submitFailed');
+
+  toast.error(errorMessage);
+} finally {
+  setIsSubmitting(false);
+}
+};
 
   if (isInitialLoading) return (
     <div className="h-screen flex flex-col items-center justify-center bg-white">

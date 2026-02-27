@@ -14,16 +14,14 @@ export const getMyBeneficiaries = async (req, res) => {
   }
 };
 
-
 export const registerBeneficiary = async (req, res) => {
   try {
     const ashaId = req.user.id; 
-    const { name, age, state,district,block, village,medical_fields, contact_number, edd, is_high_risk, govt_id } = req.body;
+    const { name, age, state, district, block, village, medical_fields, contact_number, edd, is_high_risk, govt_id } = req.body;
 
-    
     const [newBeneficiary] = await db('beneficiaries').insert({
       name,
-      age: parseInt(age), // Ensure age is an integer
+      age: parseInt(age),
       state,
       district,
       block,
@@ -34,21 +32,39 @@ export const registerBeneficiary = async (req, res) => {
       govt_id: govt_id || null,
       assigned_asha_id: ashaId,
       current_phase: 'antenatal',
-
-      medical_fields: medical_fields || { history: '',blood_group: '' },
-
+      medical_fields: JSON.stringify(medical_fields || { history: '', blood_group: '' }), // Ensure JSON stringify if column is JSON/Text
       is_data_complete: true,
       status: 'active',
-      registration_source: 'asha_manual' // Make sure this matches your enum!
+      registration_source: 'asha_manual'
     }).returning('*');
 
     res.status(201).json({ status: 'success', data: newBeneficiary });
   } catch (error) {
-    console.error("Registration DB Error:", error);
-    res.status(500).json({ message: "Database Error: " + error.message });
+
+    // 1. Check for PostgreSQL Unique Constraint Violation (Error 23505)
+    if (error.code === '23505') {
+      let detail = "A beneficiary with this ID or contact number already exists.";
+      
+      // Optional: Parse the error message to see which field failed
+      if (error.detail.includes('govt_id')) {
+        detail = "A beneficiary with this Government ID is already registered.";
+      } else if (error.detail.includes('contact_number')) {
+        detail = "This contact number is already registered to another person.";
+      }
+
+      return res.status(400).json({ 
+        status: 'fail',
+        message: detail 
+      });
+    }
+
+    // 2. Fallback for other errors
+    res.status(500).json({ 
+      status: 'error',
+      message: "Internal Server Error: " + error.message 
+    });
   }
 };
-
 
 export const deleteManualBeneficiary = async (req, res) => {
   const { id } = req.params;
@@ -162,7 +178,6 @@ export const getAshaStats = async (req, res) => {
     res.status(500).json({ status: 'error', message: error.message });
   }
 };
-
 export const getTodayPriorityTasks = async (req, res) => {
   try {
     const ashaId = req.user.id;
@@ -174,19 +189,21 @@ export const getTodayPriorityTasks = async (req, res) => {
       .join('forms', 'schedules.form_id', 'forms.id')
       .where({
         'beneficiaries.assigned_asha_id': ashaId,
-        'schedules.status': 'planned',
-        'schedules.scheduled_date': today
+        'schedules.status': 'planned'
       })
+      // Use <= to get today's tasks PLUS all overdue tasks from the past
+      .andWhere('schedules.scheduled_date', '<=', today) 
       .select([
         'schedules.id as schedule_id',
-        'schedules.beneficiary_id', // Integer 37
-        'schedules.form_id',        // UUID
+        'schedules.beneficiary_id',
+        'schedules.form_id',
+        'schedules.scheduled_date', // Added this so you can show "Overdue" labels in UI
         'forms.phase',
         'beneficiaries.name as beneficiary_name',
         'forms.title as form_name'
-        // If you ever add month_number to schedules table, uncomment below:
-        // 'schedules.month_number' 
-      ]);
+      ])
+      // Optional: Sort by date so the oldest overdue tasks appear at the top
+      .orderBy('schedules.scheduled_date', 'asc');
 
     res.status(200).json({ status: 'success', data: tasks });
   } catch (error) {

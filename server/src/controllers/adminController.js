@@ -41,19 +41,59 @@ export const getIncompleteBeneficiaries = async (req, res) => {
   }
 };
 
+// export const updateBeneficiaryData = async (req, res) => {
+//   const { id } = req.params;
+//   try {
+//     // Admin does NOT need the "assigned_asha_id" check
+//     await db('beneficiaries').where({ id }).update({
+//       ...req.body,
+//       updated_at: db.fn.now()
+//     });
+//     res.json({ status: 'success', message: "Admin update successful" });
+//   } catch (error) {
+//     res.status(500).json({ message: error.message });
+//   }
+// };
+
 export const updateBeneficiaryData = async (req, res) => {
   const { id } = req.params;
+  
   try {
-    // Admin does NOT need the "assigned_asha_id" check
-    await db('beneficiaries').where({ id }).update({
-      ...req.body,
-      updated_at: db.fn.now()
-    });
-    res.json({ status: 'success', message: "Admin update successful" });
+    // 1. Manually pick ONLY the columns that exist in your local SQL table
+    // This prevents "column does not exist" errors
+    const updateData = {
+      name: req.body.name,
+      state: req.body.state,
+      district: req.body.district,
+      block: req.body.block,
+      village: req.body.village,
+      contact_number: req.body.contact_number,
+      edd: req.body.edd,
+      govt_id: req.body.govt_id,
+      is_high_risk: req.body.is_high_risk,
+      is_data_complete: req.body.is_data_complete,
+      updated_at: new Date() 
+    };
+
+    // 2. Only add asha_id if it was actually sent (for Admin mode)
+    if (req.body.assigned_asha_id !== undefined) {
+      updateData.assigned_asha_id = req.body.assigned_asha_id;
+    }
+
+    const result = await db('beneficiaries')
+      .where({ id })
+      .update(updateData);
+
+    if (result === 0) return res.status(404).json({ message: "Beneficiary not found" });
+
+    res.json({ status: 'success', message: "Update successful" });
   } catch (error) {
+    // Check your VS Code Terminal! This log is the key.
+    console.error("CRITICAL SQL ERROR:", error.message);
     res.status(500).json({ message: error.message });
   }
 };
+
 // Feature 3 
 
 export const getAllBeneficiaries = async (req, res) => {

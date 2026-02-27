@@ -21,7 +21,7 @@ app.use(cors({
     'https://niticare.vercel.app' 
   ],
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // OPTIONS is included here
+  methods: ['GET', 'POST', 'PUT', 'DELETE','PATCH', 'OPTIONS'], // OPTIONS is included here
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 

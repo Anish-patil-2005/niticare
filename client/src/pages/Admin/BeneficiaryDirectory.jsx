@@ -149,6 +149,7 @@ const BeneficiaryDirectory = ({ mode = "admin" }) => {
         is_high_risk: editData.is_high_risk,
         is_data_complete: isComplete,
       };
+
       if (mode === "admin")
         payload.assigned_asha_id = editData.assigned_asha_id || null;
       isAshaMode
@@ -164,23 +165,27 @@ const BeneficiaryDirectory = ({ mode = "admin" }) => {
     }
   };
 
-  const handleBulkAssign = async () => {
-    if (!bulkAshaId) return toast.error(t("tasks.select_asha"));
-    const loadId = toast.loading(t("common.loading"));
-    try {
-      await Promise.all(
-        selectedIds.map((id) =>
-          adminService.updateBeneficiary(id, { assigned_asha_id: bulkAshaId })
-        )
-      );
-      await fetchData();
-      setSelectedIds([]);
-      setBulkAshaId("");
-      toast.success(t("common.success"), { id: loadId });
-    } catch (err) {
-      toast.error(t("common.error"), { id: loadId });
-    }
-  };
+ const handleBulkAssign = async () => {
+  if (!bulkAshaId) return toast.error(t("tasks.select_asha"));
+  
+  const loadId = toast.loading(t("common.loading"));
+  try {
+    // FIX: Use allocateManual instead of looping updateBeneficiary
+    // This sends { beneficiaryIds: [1, 2, 3], ashaId: "..." }
+    await adminService.allocateManual({ 
+      beneficiaryIds: selectedIds, 
+      ashaId: bulkAshaId 
+    });
+
+    await fetchData();
+    setSelectedIds([]);
+    setBulkAshaId("");
+    toast.success(t("common.success"), { id: loadId });
+  } catch (err) {
+    console.error("Bulk Assign Error:", err);
+    toast.error(t("common.error"), { id: loadId });
+  }
+};
 
   const handleExport = async () => {
     const loadId = toast.loading("Downloading Report");

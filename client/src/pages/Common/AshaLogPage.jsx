@@ -15,13 +15,23 @@ export const AshaLogsPage = () => {
   useEffect(() => {
   const fetch = async () => {
     setLoading(true);
-    const result = await ashaLogService.getLogs(id); 
-    console.log("Result from API:", result); // Debugging
-    setLogs(result || []);
-    setLoading(false);
+    try {
+      const result = await ashaLogService.getLogs(id); 
+      
+      // Look closely at your API result: The array is inside a key called 'data'
+      // result.data is the array we need.
+      const actualLogs = result?.data || [];
+      
+      setLogs(actualLogs);
+    } catch (error) {
+      console.error("Fetch Error:", error);
+      setLogs([]); // Reset to empty array on error
+    } finally {
+      setLoading(false);
+    }
   };
   fetch();
-}, [id]); // Only refetch when the ID in the URL changes
+}, [id]);
 
  
   return (

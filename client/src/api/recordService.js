@@ -15,13 +15,14 @@ export const recordService = {
    * If month is provided, it targets a specific monthly record.
    */
   getExistingRecord: async (beneficiaryId, formId, month = 0, phase = 'anc') => {
-    try {
-      const res = await client.get('/records/get-single', {
+      try {
+        const res = await client.get('/records/get-single', {
         params: { 
           beneficiary_id: Number(beneficiaryId), 
           form_id: formId, 
-          month_number: isNaN(Number(month)) ? 0 : Number(month),
-          phase: phase // Added phase to tell backend to return history
+          // For child_care history, we don't send a specific month_number
+          month_number: (phase === 'child_care' || phase === 'child') ? undefined : Number(month),
+          phase: phase 
         }
       });
       return res.data;
