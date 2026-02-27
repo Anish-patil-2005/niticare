@@ -20,20 +20,23 @@ const TaskAllocation = () => {
   }, []);
 
   const loadInitialData = async () => {
-    try {
-      const ashasRes = await adminService.getAshaWorkers();
-      const assignmentsRes = await adminService.getAssignments();
-      
-      const ashaList = ashasRes.data || ashasRes;
-      const assignList = assignmentsRes.data || assignmentsRes;
-      
-      setAshas(Array.isArray(ashaList) ? ashaList : []);
-      setAssignments(Array.isArray(assignList) ? assignList : []);
-    } catch (err) {
-      console.error("Fetch Error:", err);
-      toast.error(t('tasks.load_error'));
-    }
-  };
+  try {
+    const ashasRes = await adminService.getAshaWorkers();
+    const assignmentsRes = await adminService.getAssignments();
+    
+    // Safety check: Backend might wrap data in a 'data' or 'assignments' key
+    const ashaList = ashasRes.data || ashasRes;
+    const assignList = assignmentsRes.data || assignmentsRes.assignments || assignmentsRes;
+    
+    setAshas(Array.isArray(ashaList) ? ashaList : []);
+    setAssignments(Array.isArray(assignList) ? assignList : []);
+    
+    console.log("Assignments loaded:", assignList); // Check your console for this!
+  } catch (err) {
+    console.error("Fetch Error:", err);
+    toast.error(t('tasks.load_error'));
+  }
+};
 
   const handleAllocation = async (e) => {
     e.preventDefault();

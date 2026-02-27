@@ -8,10 +8,10 @@ export const adminService = {
   },
 
   // --- FEATURE: ASHA MANAGEMENT ---
-  getAshaWorkers: async () => {
+getAshaWorkers: async () => {
     const response = await client.get('/admin/ashas');
-    return response.data;
-  },
+    return response.data; // Already good
+},
 
   addAshaWorker: async (data) => {
     return await client.post('/admin/ashas', data);
@@ -48,9 +48,10 @@ export const adminService = {
   },
 
   // --- FEATURE: ALLOCATION ENGINE ---
-  getAssignments: () => {
-    return client.get('/admin/assignments');
-  },
+getAssignments: async () => {
+    const response = await client.get('/admin/assignments');
+    return response.data; // FIX: Add async/await and return .data
+},
 
   allocateManual: (data) => {
     return client.post('/admin/allocate/manual', data);
