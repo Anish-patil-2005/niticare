@@ -112,27 +112,92 @@ export const importCsvData = async (filePath) => {
 };
 
 
+// export const importAshaCsv = async (filePath) => {
+//   const records = [];
+
+//   return new Promise((resolve, reject) => {
+//     fs.createReadStream(filePath)
+//       .pipe(csv())
+//       .on('data', (row) => {
+//         // 1. Extract values based on CSV headers
+//         const full_name = row['Full Name']?.trim();
+//         const username = row['Username']?.trim();
+//         const password = row['Password']?.trim();
+//         const contact_number = row['Phone']?.trim();
+//         const village = row['Village']?.trim();
+
+//         // 2. Push to temporary array (we will hash passwords in the 'end' block)
+//         if (username && password) {
+//           records.push({
+//             full_name,
+//             username,
+//             password, // temporary plain text
+//             contact_number,
+//             village,
+//             role: 'asha',
+//             is_active: true
+//           });
+//         }
+//       })
+//       .on('end', async () => {
+//         try {
+//           if (records.length === 0) {
+//             if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+//             return resolve(0);
+//           }
+
+//           // 3. Hash passwords and prepare final records
+//           // Using Promise.all so hashing happens in parallel (faster)
+//           const finalRecords = await Promise.all(records.map(async (worker) => {
+//             const salt = await bcrypt.genSalt(10);
+//             const password_hash = await bcrypt.hash(worker.password, salt);
+            
+//             // Remove plain text password and add the hash
+//             const { password, ...workerData } = worker;
+//             return { ...workerData, password_hash };
+//           }));
+
+//           // 4. Batch Insert into 'users' table
+//           // Note: .onConflict handles cases where a username might already exist
+//           await db('users')
+//             .insert(finalRecords)
+//             .onConflict('username') 
+//             .merge(); 
+
+//           if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+//           resolve(finalRecords.length);
+//         } catch (err) {
+//           console.error("ASHA Import DB Error:", err.detail || err.message);
+//           if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+//           reject(err);
+//         }
+//       })
+//       .on('error', (err) => {
+//         if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+//         reject(err);
+//       });
+//   });
+// };
 
 export const importAshaCsv = async (filePath) => {
   const records = [];
+  console.log(`[SERVICE] 📂 Opening stream for: ${filePath}`);
 
   return new Promise((resolve, reject) => {
     fs.createReadStream(filePath)
       .pipe(csv())
       .on('data', (row) => {
-        // 1. Extract values based on CSV headers
         const full_name = row['Full Name']?.trim();
         const username = row['Username']?.trim();
         const password = row['Password']?.trim();
         const contact_number = row['Phone']?.trim();
         const village = row['Village']?.trim();
 
-        // 2. Push to temporary array (we will hash passwords in the 'end' block)
         if (username && password) {
           records.push({
             full_name,
             username,
-            password, // temporary plain text
+            password, 
             contact_number,
             village,
             role: 'asha',
@@ -142,38 +207,39 @@ export const importAshaCsv = async (filePath) => {
       })
       .on('end', async () => {
         try {
+          console.log(`[SERVICE] 📖 Finished reading CSV. Total records found: ${records.length}`);
+          
           if (records.length === 0) {
+            console.log("[SERVICE] ℹ️ Empty CSV or no valid rows. Cleaning up...");
             if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
             return resolve(0);
           }
 
-          // 3. Hash passwords and prepare final records
-          // Using Promise.all so hashing happens in parallel (faster)
+          console.log("[SERVICE] 🔐 Hashing passwords and preparing DB batch...");
           const finalRecords = await Promise.all(records.map(async (worker) => {
             const salt = await bcrypt.genSalt(10);
             const password_hash = await bcrypt.hash(worker.password, salt);
-            
-            // Remove plain text password and add the hash
             const { password, ...workerData } = worker;
             return { ...workerData, password_hash };
           }));
 
-          // 4. Batch Insert into 'users' table
-          // Note: .onConflict handles cases where a username might already exist
+          console.log("[SERVICE] 💾 Executing batch insert into 'users' table...");
           await db('users')
             .insert(finalRecords)
             .onConflict('username') 
             .merge(); 
 
+          console.log("[SERVICE] 🗑️ Cleanup: Removing temporary file.");
           if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
           resolve(finalRecords.length);
         } catch (err) {
-          console.error("ASHA Import DB Error:", err.detail || err.message);
+          console.error("[SERVICE] ❌ Database Import Error:", err.message);
           if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
           reject(err);
         }
       })
       .on('error', (err) => {
+        console.error("[SERVICE] ❌ File Stream Error:", err.message);
         if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
         reject(err);
       });

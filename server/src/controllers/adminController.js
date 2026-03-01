@@ -1,28 +1,31 @@
-import * as dataSyncService from '../services/dataSyncService.js';
 import db from '../db/knex.js';
 
 // Feature 1 
+import { taskQueue } from '../queue_redis/taskQueue.js';
+
 export const uploadGovtData = async (req, res) => {
   try {
-    // 1. Check if Multer actually found a file
     if (!req.file) {
       return res.status(400).json({ status: 'error', message: 'No file uploaded' });
     }
 
-    // 2. Pass the local file path to the Service for parsing
-    const recordCount = await dataSyncService.importCsvData(req.file.path);
+    // 1. Hand off the CSV parsing to the background worker
+    // We pass 'type' so the worker knows which logic to run
+    await taskQueue.add('beneficiary-sync-job', {
+      type: 'beneficiary-sync',
+      filePath: req.file.path, 
+    });
 
-    // 3. Respond to the Admin
-    res.status(200).json({
+    // 2. Respond immediately to the Admin UI
+    res.status(202).json({
       status: 'success',
-      message: `Data sync complete. ${recordCount} records processed and imported.`,
+      message: 'Beneficiary data sync started in the background. High-risk profiles are being calculated.',
     });
   } catch (error) {
+    console.error("Controller Error:", error.message);
     res.status(500).json({ status: 'error', message: error.message });
   }
 };
-
-
 // Feature 2 : 
 // Get all beneficiaries with missing information
 export const getIncompleteBeneficiaries = async (req, res) => {
@@ -270,58 +273,75 @@ export const allocateManual = async (req, res) => {
 
 // B. Semi-Auto: Village Based (All women in a village to one ASHA)
 
+
 export const allocateByVillage = async (req, res) => {
   try {
     const { village, ashaId } = req.body;
 
-    const updatedCount = await db('beneficiaries')
-      .where({ assigned_asha_id: null })
+    // 1. The "Cheap" Check
+    const check = await db('beneficiaries')
+      .whereNull('assigned_asha_id')
       .whereRaw('LOWER(village) = ?', [village.toLowerCase()])
-      .update({ 
-        assigned_asha_id: ashaId,
-        updated_at: db.fn.now() 
-      });
+      .count('id as total')
+      .first();
 
-    if (updatedCount === 0) {
-      // We return 400 because no work was actually done
+    const total = parseInt(check?.total || 0);
+
+    // 2. Immediate Feedback if empty
+    if (total === 0) {
       return res.status(400).json({ 
         status: 'error', 
         message: `No unassigned beneficiaries found in ${village}` 
       });
     }
 
-    // IMPORTANT: Return a clear JSON success message
-    return res.status(200).json({ 
-      status: 'success', 
-      message: `Successfully allocated ${updatedCount} beneficiaries to ASHA.`,
-      count: updatedCount
+    // 3. The "Expensive" Work goes to the Worker
+    await taskQueue.add('allocate-village', { 
+      type: 'village', 
+      village: village.trim(), 
+      ashaId 
     });
 
+    return res.status(202).json({ 
+      status: 'success', 
+      message: `Allocating ${total} beneficiaries in background...` 
+    });
   } catch (error) {
-    console.error(error);
-    return res.status(500).json({ status: 'error', message: 'Internal Server Error' });
+    return res.status(500).json({ status: 'error', message: error.message });
   }
 };
-// C. Semi-Auto: Limit Based (e.g., "First 50 unassigned women")
 export const allocateByLimit = async (req, res) => {
   try {
     const { limit, ashaId } = req.body;
 
-    // Subquery to get IDs of the next 'unassigned' women
-    const unassignedIds = await db('beneficiaries')
+    // 1. Quick check for availability
+    const check = await db('beneficiaries')
       .whereNull('assigned_asha_id')
-      .limit(limit)
-      .select('id');
+      .count('id as total')
+      .first();
 
-    const ids = unassignedIds.map(b => b.id);
+    const available = parseInt(check?.total || 0);
 
-    if (ids.length === 0) {
-      return res.status(404).json({ message: "No unassigned beneficiaries left" });
+    if (available === 0) {
+      return res.status(404).json({ 
+        status: 'error', 
+        message: "No unassigned beneficiaries left in the system." 
+      });
     }
 
-    await db('beneficiaries').whereIn('id', ids).update({ assigned_asha_id: ashaId });
+    // Determine how many we can actually assign
+    const actualLimit = Math.min(parseInt(limit), available);
 
-    res.status(200).json({ status: 'success', message: `Allocated ${ids.length} women to ASHA` });
+    await taskQueue.add('allocate-limit', { 
+      type: 'limit', 
+      limit: actualLimit, 
+      ashaId 
+    });
+
+    res.status(202).json({ 
+      status: 'success', 
+      message: `Allocating ${actualLimit} beneficiaries in background.` 
+    });
   } catch (error) {
     res.status(500).json({ status: 'error', message: error.message });
   }
@@ -424,22 +444,49 @@ export const addAshaWorker = async (req, res) => {
 
 // 1. b) Add bulk add asha one go
 
+// export const bulkAddAsha = async (req, res) => {
+//   try {
+//     if (!req.file) {
+//       return res.status(400).json({ status: 'error', message: 'No CSV file uploaded' });
+//     }
+
+//     // Pass the file path to the service
+//     const recordCount = await dataSyncService.importAshaCsv(req.file.path);
+
+//     res.status(200).json({
+//       status: 'success',
+//       message: `Onboarding complete. ${recordCount} ASHA workers registered successfully.`,
+//     });
+//   } catch (error) {
+//     console.error("Bulk Registration Error:", error);
+//     res.status(500).json({ status: 'error', message: error.message });
+//   }
+// };
+
+// one go with redis queue
+import { addAshaJob } from '../queue_redis/ashaQueue.js';
+
 export const bulkAddAsha = async (req, res) => {
   try {
     if (!req.file) {
+      console.error("[PRODUCER] ❌ Upload attempt without file.");
       return res.status(400).json({ status: 'error', message: 'No CSV file uploaded' });
     }
 
-    // Pass the file path to the service
-    const recordCount = await dataSyncService.importAshaCsv(req.file.path);
+    console.log(`[PRODUCER] 📥 File received: ${req.file.originalname}. Queuing job...`);
 
-    res.status(200).json({
+    // Instead of awaiting the import, we push to Redis
+    const job = await addAshaJob(req.file.path);
+
+    console.log(`[PRODUCER] ✅ Job successfully added to Redis. JobID: ${job?.id}`);
+
+    res.status(202).json({
       status: 'success',
-      message: `Onboarding complete. ${recordCount} ASHA workers registered successfully.`,
+      message: 'File uploaded successfully. Processing has started in the background.',
     });
   } catch (error) {
-    console.error("Bulk Registration Error:", error);
-    res.status(500).json({ status: 'error', message: error.message });
+    console.error(`[PRODUCER] ❌ Failed to queue the job: ${error.message}`);
+    res.status(500).json({ status: 'error', message: 'Failed to queue the job.' });
   }
 };
 

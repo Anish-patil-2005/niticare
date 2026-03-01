@@ -15,8 +15,10 @@
     "yes" : "Yes",
     "no":"No",
     "tracking_subtitle": "Track visits, tasks, and care activities in one place",
-    "confirm_delete": "Confirm Delete"
+    "confirm_delete": "Confirm Delete",
+    "refresh":"Refresh List"
   },
+  
   "nav": {
     "dashboard": "Dashboard",
     "asha_mgmt": "ASHA Management",
@@ -254,7 +256,8 @@
   },
   "success": {
     "updated": "Record updated successfully",
-    "registered": "Registration successful"
+    "registered": "Registration successful",
+    "list_updated":"List_updated"
   },
   "antenatal": {
     "progress_title": "Pregnancy Progress",

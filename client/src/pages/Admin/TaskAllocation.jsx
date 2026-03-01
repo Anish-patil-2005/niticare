@@ -56,19 +56,21 @@ try {
     ? { village: village.trim(), ashaId: selectedAsha } 
     : { limit: parseInt(limit), ashaId: selectedAsha };
 
+  
   const res = allocationType === "village" 
-    ? await adminService.allocateByVillage(payload)
-    : await adminService.allocateByLimit(payload);
-  
-  // LOG THE RESPONSE to see what the backend is actually sending
-  console.log("Allocation Response:", res);
+        ? await adminService.allocateByVillage(payload)
+        : await adminService.allocateByLimit(payload);
+      
+      // Since it's background, show a "Processing" toast
+      toast.success(res.data.message || "Allocation started...", { id: loadId });
+      
+      setVillage("");
 
-  // Safely check for message
-  const successMessage = res?.data?.message || res?.message || t('tasks.success_alloc');
-  
-  toast.success(successMessage, { id: loadId });
-  setVillage("");
-  loadInitialData(); 
+      // 🛑 WAIT 3 SECONDS for the SQL background worker to finish
+      setTimeout(() => {
+        loadInitialData(); // Re-fetch the list/counts
+        toast.success(t('tasks.success_alloc'), { duration: 3000 });
+      }, 3000);
   
 } catch (err) {
   console.error("Allocation Catch Block:", err);
